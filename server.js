@@ -227,26 +227,49 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Новый пароль должен быть не менее 4 символов' });
   }
   
-  db.get(
-    'SELECT password_hash FROM users WHERE id = ?',
-    [req.userId],
-    async (err, user) => {
-      if (err || !user) return res.status(500).json({ error: 'Ошибка БД' });
-      
-      const valid = await bcrypt.compare(currentPassword, user.password_hash);
-      if (!valid) return res.status(401).json({ error: 'Текущий пароль неверный' });
-      
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+  try {
+    // Получаем текущий хеш пароля
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT password_hash FROM users WHERE id = ?',
+        [req.userId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Проверяем текущий пароль
+    const valid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Текущий пароль неверный' });
+    }
+    
+    // Хешируем новый пароль
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Обновляем пароль
+    await new Promise((resolve, reject) => {
       db.run(
         'UPDATE users SET password_hash = ? WHERE id = ?',
         [hashedPassword, req.userId],
         (err) => {
-          if (err) return res.status(500).json({ error: 'Ошибка БД' });
-          res.json({ message: 'Пароль изменён!' });
+          if (err) reject(err);
+          else resolve();
         }
       );
-    }
-  );
+    });
+    
+    res.json({ message: 'Пароль успешно изменён!' });
+  } catch (err) {
+    console.error('Ошибка смены пароля:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 // Возвращаем фронт
