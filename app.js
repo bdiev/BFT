@@ -10,6 +10,11 @@ let currentUser = loadCurrentUser();
 let authenticated = Boolean(currentUser);
 let history = loadHistory(currentUser);
 
+// Modal элементы
+const authModal = document.getElementById('authModal');
+const openAuthModal = document.getElementById('openAuthModal');
+const closeAuthModal = document.getElementById('closeAuthModal');
+
 const maleBtn = document.getElementById('maleBtn');
 const femaleBtn = document.getElementById('femaleBtn');
 const hipWrap = document.getElementById('hip-wrap');
@@ -33,6 +38,23 @@ let viewW = 0;
 let viewH = 0;
 const maxPoints = 24;
 const chartHeight = 320;
+
+// Функции для модалей
+function openModal() {
+	authModal.classList.add('active');
+	document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+	authModal.classList.remove('active');
+	document.body.style.overflow = '';
+}
+
+openAuthModal?.addEventListener('click', openModal);
+closeAuthModal?.addEventListener('click', closeModal);
+authModal?.addEventListener('click', (e) => {
+	if (e.target === authModal) closeModal();
+});
 
 function loadCurrentUser() {
 	try {
@@ -74,14 +96,16 @@ function setSex(sex) {
 
 function updateUserBadge() {
 	if (authenticated && currentUser) {
-		currentUserPill.textContent = '👤 ' + getUserName(currentUser);
+		currentUserPill.textContent = '✓ Ты: ' + getUserName(currentUser);
 		currentUserPill.classList.remove('status-warn');
 		currentUserPill.classList.add('status-ok');
 		currentUserPill.style.display = 'inline-block';
+		openAuthModal.style.display = 'none';
 	} else {
 		currentUserPill.style.display = 'none';
 		currentUserPill.classList.remove('status-ok');
 		currentUserPill.classList.add('status-warn');
+		openAuthModal.style.display = '';
 	}
 }
 
@@ -144,6 +168,7 @@ function handleLogout() {
 	renderHistory();
 	drawChart();
 	updateLast();
+	closeModal();
 }
 
 function handleCalculate() {
@@ -402,7 +427,10 @@ maleBtn.addEventListener('click', () => setSex('male'));
 femaleBtn.addEventListener('click', () => setSex('female'));
 calcBtn.addEventListener('click', handleCalculate);
 clearBtn.addEventListener('click', clearHistory);
-loginBtn.addEventListener('click', handleLogin);
+loginBtn.addEventListener('click', () => {
+	handleLogin();
+	closeModal();
+});
 logoutBtn.addEventListener('click', handleLogout);
 
 userSelect.value = currentUser || accounts[0].id;

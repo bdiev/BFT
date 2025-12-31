@@ -12,48 +12,52 @@
 	<link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-	<div class="wrap">
-		<header>
-			<div>
-				<p class="pill">Работает везде • Даже без интернета</p>
-				<h1 class="title">Проверь жир</h1>
-				<p class="subtitle">Узнай процент жира по простой формуле. Отслеживай прогресс и смотри как меняется на графике.</p>
+	<!-- Модаль авторизации -->
+	<div class="modal-overlay" id="authModal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Кто ты?</h2>
+				<button class="modal-close" id="closeAuthModal" aria-label="Закрыть">✕</button>
 			</div>
-			<div class="stat card" style="min-width: 220px;">
-				<span class="label">Последний результат</span>
-				<span class="value" id="last-result">—</span>
-				<span class="muted" id="last-meta">Нет данных</span>
-			</div>
-		</header>
-
-		<div class="card" id="auth-card">
-			<div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap: wrap;">
-				<div>
-					<strong>Кто ты?</strong>
-					<p class="muted" style="margin:4px 0 0;">Выбери себя и войди</p>
-				</div>
-				<span class="badge" id="current-user-pill" style="display:none;">Не вошли</span>
-			</div>
-			<div class="auth-grid" style="margin-top:12px;">
-				<div>
-					<label for="userSelect">Пользователь</label>
-					<select id="userSelect" style="width:100%; padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: var(--text);">
+			<div class="modal-body">
+				<div style="margin-bottom: 16px;">
+					<label for="userSelect" class="label">Выбери себя</label>
+					<select id="userSelect">
 						<option value="bohdan">Bohdan</option>
 						<option value="konstantin">Konstantin</option>
 						<option value="izabella">Izabella</option>
 					</select>
 				</div>
-				<div>
-					<label for="passwordInput">Пароль</label>
-					<input id="passwordInput" type="password" inputmode="numeric" />
+				<div style="margin-bottom: 20px;">
+					<label for="passwordInput" class="label">Пароль</label>
+					<input id="passwordInput" type="password" inputmode="numeric" placeholder="Введи пароль" />
 				</div>
-				<div style="display:flex; gap:8px;">
-					<button class="primary" id="loginBtn" type="button" style="flex:1;">Войти</button>
-					<button class="ghost" id="logoutBtn" type="button" style="flex:1;">Выйти</button>
-				</div>
+				<p class="muted" id="authStatus" style="margin: 0 0 16px; font-size: 13px;">Твои данные останутся при тебе — только локально.</p>
 			</div>
-			<p class="muted" id="authStatus" style="margin:10px 0 0;">Твои данные останутся при тебе — только локально.</p>
+			<div class="modal-footer">
+				<button class="ghost" id="logoutBtn">Выйти</button>
+				<button class="primary" id="loginBtn">Войти</button>
+			</div>
 		</div>
+	</div>
+
+	<div class="wrap">
+		<header>
+			<div>
+				<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+					<p class="pill">Работает везде • Даже без интернета</p>
+					<button class="pill-btn" id="openAuthModal">Войти</button>
+					<span class="pill-badge" id="current-user-pill" style="display:none;"></span>
+				</div>
+				<h1 class="title">Проверь жир</h1>
+				<p class="subtitle">Узнай процент жира по простой формуле. Отслеживай прогресс и смотри как меняется на графике.</p>
+			</div>
+			<div class="stat card" style="min-width: 200px;">
+				<span class="label">Последний результат</span>
+				<span class="value" id="last-result">—</span>
+				<span class="muted" id="last-meta">Нет данных</span>
+			</div>
+		</header>
 
 		<section class="grid">
 			<div class="card" id="form-card">
