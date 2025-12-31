@@ -293,8 +293,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  const env = process.env.NODE_ENV || 'development';
-  console.log(`\n✓ Сервер слушает http://0.0.0.0:${PORT}`);
-  console.log(`  Окружение: ${env}`);
-  console.log(`  БД: ${path.join(__dirname, 'database.db')}\n`);
+  console.log(`Сервер слушает http://localhost:${PORT}`);
 });
