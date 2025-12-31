@@ -2,6 +2,8 @@ const CACHE = 'bf-tracker-v1';
 const ASSETS = [
   '/',
   '/index.html',
+  '/style.css',
+  '/app.js',
   '/manifest.json',
   '/service-worker.js',
   '/icons/icon-192.svg',
