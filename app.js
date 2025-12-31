@@ -8,6 +8,7 @@ let userId = null;
 // ===== API ФУНКЦИИ =====
 async function apiCall(endpoint, options = {}) {
 	try {
+		console.log('📡 API запрос:', endpoint, options);
 		const response = await fetch(endpoint, {
 			credentials: 'include',
 			...options,
@@ -16,11 +17,14 @@ async function apiCall(endpoint, options = {}) {
 				...options.headers
 			}
 		});
+		console.log('📡 Ответ:', response.status, response.statusText);
 		if (!response.ok) {
 			const error = await response.json();
 			throw new Error(error.error || 'API ошибка');
 		}
-		return await response.json();
+		const data = await response.json();
+		console.log('📡 Данные:', data);
+		return data;
 	} catch (err) {
 		console.error('API ошибка:', err);
 		throw err;
@@ -34,6 +38,7 @@ async function loadUserData() {
 		userId = user.id;
 		authenticated = true;
 		const entries = await apiCall('/api/history');
+		console.log('✓ Загруженные данные с сервера:', entries);
 		history = entries.map(e => ({
 			id: e.id,
 			sex: e.sex,
@@ -45,8 +50,10 @@ async function loadUserData() {
 			group: e.group,
 			timestamp: new Date(e.timestamp).getTime()
 		}));
+		console.log('✓ Обработанная история:', history);
 		return true;
-	} catch {
+	} catch (err) {
+		console.error('✗ Ошибка loadUserData:', err);
 		currentUser = null;
 		userId = null;
 		authenticated = false;
@@ -254,7 +261,7 @@ async function handleLogin() {
 		});
 		
 		// Даём браузеру время обработать cookies
-		await new Promise(resolve => setTimeout(resolve, 100));
+		await new Promise(resolve => setTimeout(resolve, 200));
 		
 		// Загружаем данные пользователя
 		const loaded = await loadUserData();
@@ -269,12 +276,24 @@ async function handleLogin() {
 		passwordInput.value = '';
 		userSelect.value = currentUser;
 		updateUserBadge();
+		
+		// Инициализируем canvas размеры перед отрисовкой
+		initCanvasSize();
+		
+		// Рендерим все элементы
 		renderHistory();
 		drawChart();
 		updateLast(history[history.length - 1]);
 		
 		// Закрываем модаль после успешного входа
-		setTimeout(() => closeModal(), 500);
+		setTimeout(() => {
+			closeModal();
+			// После закрытия модали пересчитываем размеры
+			setTimeout(() => {
+				initCanvasSize();
+				drawChart();
+			}, 200);
+		}, 500);
 	} catch (err) {
 		authStatus.textContent = '❌ ' + err.message;
 		authStatus.classList.add('status-warn');
@@ -400,6 +419,7 @@ async function deleteEntry(id) {
 }
 
 function renderHistory() {
+	console.log('🎨 Рендерим историю. Authenticated:', authenticated, 'User:', currentUser, 'История:', history);
 	if (!authenticated || !currentUser) {
 		historyList.innerHTML = '<p class="muted">Войди, чтобы увидеть свой прогресс</p>';
 		historyCount.textContent = '0 записей';
@@ -488,6 +508,10 @@ function resizeCanvas() {
 	ctx.scale(dpr, dpr);
 	viewW = chart.width / dpr;
 	viewH = chart.height / dpr;
+}
+
+function initCanvasSize() {
+	resizeCanvas();
 }
 
 function drawChart() {
@@ -689,13 +713,16 @@ document.getElementById('cancelChangePassword')?.addEventListener('click', toggl
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 (async () => {
+	console.log('🚀 Инициализация приложения...');
 	await loadUserData();
+	console.log('✓ После loadUserData - authenticated:', authenticated, 'currentUser:', currentUser, 'история:', history.length);
 	setSex('male');
 	updateUserBadge();
 	renderHistory();
 	resizeCanvas();
 	drawChart();
 	updateLast(authenticated ? history[history.length - 1] : null);
+	console.log('✓ Инициализация завершена');
 	
 	window.addEventListener('resize', () => {
 		resizeCanvas();
