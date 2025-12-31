@@ -85,33 +85,40 @@ app.post('/api/signup', async (req, res) => {
     return res.status(400).json({ error: 'Пароль должен быть не менее 4 символов' });
   }
   
-  const hashedPassword = await bcrypt.hash(password, 10);
-  
-  db.run(
-    'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-    [username, email || null, hashedPassword],
-    function(err) {
-      if (err) {
-        if (err.message.includes('UNIQUE')) {
-          return res.status(409).json({ error: 'Пользователь уже существует' });
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    db.run(
+      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
+      [username, email || null, hashedPassword],
+      function(err) {
+        if (err) {
+          console.error('DB Error:', err.message);
+          if (err.message.includes('UNIQUE')) {
+            return res.status(409).json({ error: 'Пользователь уже существует' });
+          }
+          return res.status(500).json({ error: 'Ошибка при создании пользователя' });
         }
-        return res.status(500).json({ error: 'Ошибка БД' });
+        
+        const token = jwt.sign({ id: this.lastID, username }, JWT_SECRET, { expiresIn: '30d' });
+        res.cookie('token', token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Lax',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+          path: '/'
+        });
+        
+        res.json({
+          message: 'Аккаунт создан!',
+          user: { id: this.lastID, username }
+        });
       }
-      
-      const token = jwt.sign({ id: this.lastID, username }, JWT_SECRET, { expiresIn: '30d' });
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'Lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000
-      });
-      
-      res.json({
-        message: 'Аккаунт создан!',
-        user: { id: this.lastID, username }
-      });
-    }
-  );
+    );
+  } catch (err) {
+    console.error('Signup Error:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 // Логин
@@ -140,7 +147,8 @@ app.post('/api/login', (req, res) => {
         httpOnly: true,
         secure: false,
         sameSite: 'Lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/'
       });
       
       res.json({
@@ -153,7 +161,7 @@ app.post('/api/login', (req, res) => {
 
 // Выход
 app.post('/api/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', { path: '/' });
   res.json({ message: 'До свидания!' });
 });
 
