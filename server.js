@@ -14,6 +14,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 app.use(cookieParser());
+
+// Логирование всех запросов
+app.use((req, res, next) => {
+  console.log(`\n📨 ${req.method} ${req.path} from ${req.ip}`);
+  console.log('   Cookies:', Object.keys(req.cookies).length ? req.cookies : 'нет');
+  next();
+});
+
 app.use(cors({
   origin: function (origin, callback) {
     callback(null, true);

@@ -8,8 +8,9 @@ let userId = null;
 // ===== API ФУНКЦИИ =====
 async function apiCall(endpoint, options = {}) {
 	try {
-		console.log('📡 API запрос:', endpoint, options);
-		const response = await fetch(endpoint, {
+		const fullUrl = new URL(endpoint, window.location.origin).href;
+		console.log('📡 API запрос к:', fullUrl);
+		const response = await fetch(fullUrl, {
 			credentials: 'include',
 			...options,
 			headers: {
@@ -226,7 +227,6 @@ async function handleSignup() {
 		signupEmailInput.value = '';
 		signupPasswordInput.value = '';
 		
-		userSelect.value = currentUser;
 		updateUserBadge();
 		renderHistory();
 		drawChart();
@@ -274,7 +274,6 @@ async function handleLogin() {
 		authStatus.textContent = '✓ Привет, ' + currentUser + '! Твои данные загружены.';
 		authStatus.classList.remove('status-warn');
 		passwordInput.value = '';
-		userSelect.value = currentUser;
 		updateUserBadge();
 		
 		// Инициализируем canvas размеры перед отрисовкой
@@ -308,13 +307,15 @@ async function handleLogout() {
 		currentUser = null;
 		userId = null;
 		history = [];
+		userSelect.value = '';
+		passwordInput.value = '';
 		authStatus.textContent = 'До свидания! Ты вышел.';
 		authStatus.classList.add('status-warn');
 		updateUserBadge();
 		renderHistory();
 		drawChart();
 		updateLast();
-		closeModal();
+		openModal();
 	} catch (err) {
 		authStatus.textContent = '❌ Ошибка выхода';
 		authStatus.classList.add('status-warn');
