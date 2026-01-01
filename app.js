@@ -24,7 +24,8 @@ const defaultCardVisibility = () => ({
 	history: true,
 	chart: true,
 	waterTracker: true,
-	waterChart: true
+	waterChart: true,
+	lastResult: true
 });
 
 let userSettings = {
@@ -284,7 +285,8 @@ function normalizeCardVisibility(visibility = {}) {
 		history: merged.history !== false,
 		chart: merged.chart !== false,
 		waterTracker: merged.waterTracker !== false,
-		waterChart: merged.waterChart !== false
+		waterChart: merged.waterChart !== false,
+		lastResult: merged.lastResult !== false
 	};
 }
 
@@ -300,6 +302,7 @@ function applyCardVisibility() {
 	toggleCardElement(document.getElementById('chart-section'), vis.chart);
 	toggleCardElement(document.getElementById('waterSection'), vis.waterTracker);
 	toggleCardElement(document.getElementById('waterChartSection'), vis.waterChart);
+	toggleCardElement(document.getElementById('last-result-card'), vis.lastResult);
 }
 
 function syncCardVisibilityUI() {
@@ -309,7 +312,8 @@ function syncCardVisibilityUI() {
 		toggleHistoryCard: 'history',
 		toggleChartCard: 'chart',
 		toggleWaterCard: 'waterTracker',
-		toggleWaterChartCard: 'waterChart'
+		toggleWaterChartCard: 'waterChart',
+		toggleLastResultCard: 'lastResult'
 	};
 	Object.entries(map).forEach(([id, key]) => {
 		const el = document.getElementById(id);
@@ -1945,7 +1949,8 @@ const cardToggleMap = {
 	toggleHistoryCard: 'history',
 	toggleChartCard: 'chart',
 	toggleWaterCard: 'waterTracker',
-	toggleWaterChartCard: 'waterChart'
+	toggleWaterChartCard: 'waterChart',
+	toggleLastResultCard: 'lastResult'
 };
 
 Object.entries(cardToggleMap).forEach(([id, key]) => {
@@ -2104,14 +2109,30 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 			});
 		}
 
-		// Включаем анимацию входа после готовности DOM
-		document.addEventListener('DOMContentLoaded', () => {
-			window.requestAnimationFrame(() => {
-				document.body.classList.add('page-ready');
-			});
-		});
 	} catch (err) {
 		console.error('❌ КРИТИЧЕСКАЯ ОШИБКА при инициализации:', err);
 		console.error(err.stack);
-	}
+		} finally {
+			// Гарантируем показ интерфейса даже при ошибке и анимированный вход
+			window.requestAnimationFrame(() => {
+				document.body.classList.add('page-ready');
+				if (!authenticated) {
+					const landing = document.getElementById('landingPage');
+					const appContent = document.getElementById('appContent');
+					const mainHeader = document.getElementById('mainHeader');
+					landing && (landing.style.display = 'block');
+					appContent && (appContent.style.display = 'none');
+					mainHeader && (mainHeader.style.display = 'none');
+				}
+			});
+		}
 })();
+
+	// Резерв: если DOM уже готов, добавим класс для анимации входа
+	document.addEventListener('DOMContentLoaded', () => {
+		if (!document.body.classList.contains('page-ready')) {
+			window.requestAnimationFrame(() => {
+				document.body.classList.add('page-ready');
+			});
+		}
+	});

@@ -83,6 +83,9 @@
 							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
 								<input type="checkbox" id="toggleWaterChartCard" /> График воды
 							</label>
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleLastResultCard" /> Последний результат
+							</label>
 						</div>
 						<p class="muted" id="cardVisibilityStatus" style="margin: 10px 0 0; font-size: 12px;"></p>
 					</div>
@@ -135,7 +138,7 @@
 				<h1 class="title">Личный блокнот</h1>
 				<p class="subtitle">Веди учет своих данных и прогресса</p>
 			</div>
-			<div class="stat card" style="min-width: 200px;">
+			<div class="stat card" id="last-result-card" style="min-width: 200px;">
 				<span class="label">Последний результат</span>
 				<span class="value" id="last-result">—</span>
 				<span class="muted" id="last-meta">Нет данных</span>
