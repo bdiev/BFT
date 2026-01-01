@@ -961,18 +961,19 @@ canvas {
 	bottom: 0;
 	background: rgba(0, 0, 0, 0.6);
 	backdrop-filter: blur(4px);
+	display: flex;
 	justify-content: center;
 	align-items: center;
 	z-index: 1001;
 	padding: 20px;
-	display: none;
 	opacity: 0;
+	pointer-events: none;
 	transition: opacity 0.24s ease;
 }
 
 #entryDetailModal.active {
-	display: flex;
 	opacity: 1;
+	pointer-events: auto;
 }
 
 #entryDetailModal .modal-content {
