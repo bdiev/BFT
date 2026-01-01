@@ -1249,10 +1249,9 @@ select {
 /* Footer */
 .site-footer {
 	margin-top: auto;
-	margin-left: calc(50% - 50vw);
-	margin-right: calc(50% - 50vw);
-	width: 100vw;
-	max-width: 100vw;
+	margin-left: -20px;
+	margin-right: -20px;
+	width: calc(100% + 40px);
 	padding: 12px 20px;
 	background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
 	border-top: 1px solid rgba(99, 102, 241, 0.15);
