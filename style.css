@@ -213,6 +213,15 @@ header {
 	background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
 }
 
+.status-fade-out {
+	animation: statusFadeOut 0.5s ease forwards;
+}
+
+@keyframes statusFadeOut {
+	0% { opacity: 1; transform: translateY(0); }
+	100% { opacity: 0; transform: translateY(-6px); }
+}
+
 .stat {
 	display: flex;
 	flex-direction: column;

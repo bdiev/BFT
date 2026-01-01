@@ -328,10 +328,13 @@ async function handleLogout() {
 		renderHistory();
 		drawChart();
 		updateLast();
-		// Убираем сообщение через 2 секунды
+		// Убираем сообщение через 2 секунды с плавным исчезновением
 		setTimeout(() => {
-			authStatus.textContent = '';
-			authStatus.classList.remove('status-warn');
+			authStatus.classList.add('status-fade-out');
+			setTimeout(() => {
+				authStatus.textContent = '';
+				authStatus.classList.remove('status-warn', 'status-fade-out');
+			}, 500);
 		}, 2000);
 
 		// Закрываем модалку через 3 секунды после выхода
