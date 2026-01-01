@@ -400,6 +400,37 @@ async function handleSignup() {
 	}
 }
 
+async function autoLogin(username, password) {
+	try {
+		console.log('⏳ Проверяю данные...'); 
+		
+		const result = await apiCall('/api/login', {
+			method: 'POST',
+			body: JSON.stringify({ username, password })
+		});
+		
+		// Даём браузеру время обработать cookies
+		await new Promise(resolve => setTimeout(resolve, 200));
+		
+		// Загружаем данные пользователя
+		const loaded = await loadUserData();
+		if (!loaded) {
+			console.error('❌ Ошибка загрузки данных');
+			return false;
+		}
+		
+		console.log('✓ Автоматический вход успешен:', currentUser);
+		updateUserBadge();
+		return true;
+	} catch (err) {
+		console.error('❌ Ошибка автоматического входа:', err.message);
+		// Удаляем неверные сохраненные данные
+		localStorage.removeItem('rememberMe_username');
+		localStorage.removeItem('rememberMe_password');
+		return false;
+	}
+}
+
 async function handleLogin() {
 	const username = userSelect.value.trim();
 	const password = passwordInput.value.trim();
@@ -1422,12 +1453,11 @@ document.getElementById('waterSettingsModal')?.addEventListener('click', (e) => 
 	
 	if (savedUsername && savedPassword) {
 		console.log('🔄 Найдены сохраненные данные входа, попытка автоматического входа...');
-		userSelect.value = savedUsername;
-		passwordInput.value = savedPassword;
-		document.getElementById('rememberMeCheckbox').checked = true;
-		
-		// Автоматически логинимся
-		await handleLogin();
+		const autoLoginSuccess = await autoLogin(savedUsername, savedPassword);
+		if (autoLoginSuccess) {
+			await loadWaterSettings();
+			await loadWaterLogs();
+		}
 	} else {
 		// Обычная загрузка данных пользователя (через cookies если есть)
 		await loadUserData();
