@@ -480,6 +480,131 @@ canvas {
 	border: 1.5px solid rgba(99, 102, 241, 0.15);
 }
 
+/* Landing Page */
+.landing-page {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	padding: 60px 20px;
+}
+
+.landing-hero {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 60px;
+	align-items: center;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.landing-content {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.landing-title {
+	font-size: clamp(32px, 5vw, 48px);
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	margin: 0;
+}
+
+.landing-description {
+	font-size: 18px;
+	color: var(--text-light);
+	line-height: 1.6;
+	margin: 0;
+}
+
+.landing-features {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.feature {
+	display: flex;
+	gap: 16px;
+	padding: 16px;
+	border-radius: var(--radius-md);
+	background: rgba(99, 102, 241, 0.08);
+	border: 1px solid rgba(99, 102, 241, 0.15);
+	transition: all 0.3s ease;
+}
+
+.feature:hover {
+	background: rgba(99, 102, 241, 0.12);
+	border-color: rgba(99, 102, 241, 0.25);
+	transform: translateX(4px);
+}
+
+.feature-icon {
+	font-size: 28px;
+	flex-shrink: 0;
+}
+
+.feature h3 {
+	margin: 0 0 4px;
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text-dark);
+}
+
+.feature p {
+	margin: 0;
+	font-size: 14px;
+	color: var(--text-muted);
+}
+
+.landing-btn {
+	align-self: flex-start;
+	padding: 16px 32px;
+	font-size: 16px;
+}
+
+.landing-visual {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.landing-card {
+	background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
+	border: 1.5px solid rgba(99, 102, 241, 0.2);
+	border-radius: var(--radius);
+	padding: 48px;
+	width: 100%;
+	max-width: 300px;
+	aspect-ratio: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+	.landing-hero {
+		grid-template-columns: 1fr;
+		gap: 40px;
+	}
+
+	.landing-visual {
+		order: -1;
+	}
+
+	.landing-btn {
+		width: 100%;
+		align-self: stretch;
+	}
+}
+
 /* Модальное окно */
 .modal-overlay {
 	display: flex;

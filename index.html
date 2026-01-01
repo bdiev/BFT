@@ -111,7 +111,61 @@
 			</div>
 		</header>
 
-		<section class="grid">
+		<!-- Landing Page (для неавторизованных) -->
+		<section id="landingPage" class="landing-page" style="display: none;">
+			<div class="landing-hero">
+				<div class="landing-content">
+					<h2 class="landing-title">Отслеживай свой прогресс</h2>
+					<p class="landing-description">
+						Body Fat Tracker помогает измерять и анализировать процент жира в теле с использованием проверенной формулы US Navy. 
+						Сохраняй результаты, смотри динамику на графике и достигай своих целей.
+					</p>
+					<div class="landing-features">
+						<div class="feature">
+							<div class="feature-icon">📊</div>
+							<div>
+								<h3>Простой расчёт</h3>
+								<p>Введи свои параметры и получи результат за секунду</p>
+							</div>
+						</div>
+						<div class="feature">
+							<div class="feature-icon">📈</div>
+							<div>
+								<h3>Отслеживай прогресс</h3>
+								<p>Сохраняй все результаты и смотри как меняется процент жира</p>
+							</div>
+						</div>
+						<div class="feature">
+							<div class="feature-icon">🔐</div>
+							<div>
+								<h3>Защита данных</h3>
+								<p>Твои личные данные хранятся безопасно и доступны только тебе</p>
+							</div>
+						</div>
+						<div class="feature">
+							<div class="feature-icon">📱</div>
+							<div>
+								<h3>Везде доступно</h3>
+								<p>Работает на всех устройствах, даже без интернета</p>
+							</div>
+						</div>
+					</div>
+					<button class="primary landing-btn" id="landingLoginBtn">Начать прямо сейчас</button>
+				</div>
+				<div class="landing-visual">
+					<div class="landing-card">
+						<div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+						<div style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">15.5%</div>
+						<div style="font-size: 12px; color: var(--text-muted);">Процент жира</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="appContent" style="display: none;">
+
+		<section id="appContent" style="display: none;">
+			<section class="grid">
 			<div class="card" id="form-card">
 				<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap;">
 					<div>
@@ -174,6 +228,7 @@
 				</div>
 			</div>
 			<canvas id="chart" height="280"></canvas>
+		</section>
 		</section>
 	</div>
 

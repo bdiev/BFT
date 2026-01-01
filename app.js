@@ -226,8 +226,14 @@ function updateUserBadge() {
 	const logoutForm = document.getElementById('logoutForm');
 	const modalTitle = document.getElementById('modalTitle');
 	const userDisplayName = document.getElementById('userDisplayName');
+	const landingPage = document.getElementById('landingPage');
+	const appContent = document.getElementById('appContent');
 	
 	if (authenticated && currentUser) {
+		// Скрываем landing page, показываем приложение
+		landingPage.style.display = 'none';
+		appContent.style.display = 'block';
+		
 		currentUserPill.textContent = '✓ Ты: ' + currentUser;
 		currentUserPill.classList.remove('status-warn');
 		currentUserPill.classList.add('status-ok');
@@ -241,6 +247,10 @@ function updateUserBadge() {
 		loginBtn.style.display = 'none';
 		toggleSignupBtn.style.display = 'none';
 	} else {
+		// Показываем landing page, скрываем приложение
+		landingPage.style.display = 'block';
+		appContent.style.display = 'none';
+		
 		currentUserPill.style.display = 'none';
 		currentUserPill.classList.remove('status-ok');
 		currentUserPill.classList.add('status-warn');
@@ -248,7 +258,6 @@ function updateUserBadge() {
 		loginForm.style.display = 'block';
 		logoutForm.style.display = 'none';
 		signupForm.style.display = 'none';
-		modalTitle.textContent = 'Кто ты?';
 		logoutBtn.style.display = 'none';
 		loginBtn.style.display = '';
 		toggleSignupBtn.style.display = '';
@@ -804,6 +813,7 @@ backToLoginBtn?.addEventListener('click', toggleSignupForm);
 document.getElementById('toggleChangePassword')?.addEventListener('click', toggleChangePasswordForm);
 document.getElementById('saveNewPassword')?.addEventListener('click', handleChangePassword);
 document.getElementById('cancelChangePassword')?.addEventListener('click', toggleChangePasswordForm);
+document.getElementById('landingLoginBtn')?.addEventListener('click', openModal);
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 (async () => {
