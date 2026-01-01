@@ -69,7 +69,10 @@ db.serialize(() => {
       password_hash TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы users:', err);
+    else console.log('✓ Таблица users готова');
+  });
   
   db.run(`
     CREATE TABLE IF NOT EXISTS entries (
@@ -85,7 +88,16 @@ db.serialize(() => {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
-  `);
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы entries:', err);
+    else console.log('✓ Таблица entries готова');
+  });
+  
+  // Проверяем количество пользователей в БД
+  db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+    if (err) console.error('Ошибка при подсчёте пользователей:', err);
+    else console.log(`📊 В БД всего пользователей: ${row.count}`);
+  });
 });
 
 // Middleware проверки токена
