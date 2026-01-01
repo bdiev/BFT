@@ -1,16 +1,16 @@
-const CACHE = 'bf-tracker-v2';
+const CACHE = 'bf-tracker-v3';
+const BASE = self.registration.scope; // works even if app is served from subpath
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.json',
-  '/service-worker.js',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-  '/icons/siteicon.png',
-  '/icons/tabicon.png'
-];
+  'index.html',
+  'style.css',
+  'app.js',
+  'manifest.json',
+  'service-worker.js',
+  'icons/icon-192.svg',
+  'icons/icon-512.svg',
+  'icons/siteicon.png',
+  'icons/tabicon.png'
+].map(path => new URL(path, BASE).toString());
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -29,6 +29,14 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // Навигационные запросы: возвращаем закэшированный index.html
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match(new URL('index.html', BASE).toString()).then(cached => cached || fetch(event.request))
+    );
+    return;
+  }
 
   // Не кешируем API-запросы, чтобы не получать устаревшие данные пользователя
   if (url.pathname.startsWith('/api/')) {

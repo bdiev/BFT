@@ -19,6 +19,32 @@ let currentWaterPeriod = 'day';
 let currentWaterChartPeriod = 'day';
 let waterChartData = [];
 
+const CACHE_KEYS = {
+	user: 'cache_user',
+	history: 'cache_history',
+	userSettings: 'cache_user_settings',
+	waterSettings: 'cache_water_settings',
+	waterLogs: 'cache_water_logs'
+};
+
+function saveCache(key, value) {
+	try {
+		localStorage.setItem(key, JSON.stringify(value));
+	} catch (e) {
+		console.warn('Не удалось сохранить кэш', key, e);
+	}
+}
+
+function loadCache(key, fallback = null) {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? JSON.parse(raw) : fallback;
+	} catch (e) {
+		console.warn('Не удалось загрузить кэш', key, e);
+		return fallback;
+	}
+}
+
 const defaultCardVisibility = () => ({
 	form: true,
 	history: true,
@@ -487,11 +513,21 @@ async function loadUserSettings() {
 		userSettings.card_visibility = loadedVis;
 		userSettings.card_order = normalizeCardOrder(settings.card_order);
 		setCardVisibilityStatus('Настройки карточек загружены');
+		saveCache(CACHE_KEYS.userSettings, userSettings);
 	} catch (err) {
 		console.error('Не удалось загрузить настройки пользователя:', err.message);
-		userSettings.card_visibility = defaultCardVisibility();
-		userSettings.card_order = defaultCardOrder();
-		setCardVisibilityStatus('Не удалось загрузить настройки, показаны все карточки', 'error');
+		const cached = loadCache(CACHE_KEYS.userSettings);
+		if (!navigator.onLine && cached) {
+			userSettings = {
+				card_visibility: normalizeCardVisibility(cached.card_visibility),
+				card_order: normalizeCardOrder(cached.card_order)
+			};
+			setCardVisibilityStatus('Оффлайн: применены сохранённые настройки');
+		} else {
+			userSettings.card_visibility = defaultCardVisibility();
+			userSettings.card_order = defaultCardOrder();
+			setCardVisibilityStatus('Не удалось загрузить настройки, показаны все карточки', 'error');
+		}
 	}
 	applyCardVisibility();
 	syncCardVisibilityUI();
@@ -656,6 +692,8 @@ async function loadUserData() {
 			timestamp: new Date(e.timestamp).getTime()
 		}));
 		console.log('✓ Обработанная история:', history);
+		saveCache(CACHE_KEYS.user, { id: userId, username: currentUser });
+		saveCache(CACHE_KEYS.history, history);
 		
 		// Подключаемся к WebSocket для реал-тайма
 		connectWebSocket(userId);
@@ -663,39 +701,26 @@ async function loadUserData() {
 		return true;
 	} catch (err) {
 		console.error('✗ Ошибка loadUserData:', err);
-		// Пробуем еще раз через 500ms
-		await new Promise(resolve => setTimeout(resolve, 500));
-		try {
-			const user = await apiCall('/api/me');
-			currentUser = user.username;
-			userId = user.id;
+		// Fallback to cached user/history if offline
+		const cachedUser = loadCache(CACHE_KEYS.user);
+		const cachedHistory = loadCache(CACHE_KEYS.history, []);
+		if (!navigator.onLine && cachedUser) {
+			console.warn('Используем оффлайн-кэш пользователя и истории');
+			currentUser = cachedUser.username;
+			userId = cachedUser.id || null;
 			authenticated = true;
-			const entries = await apiCall('/api/history');
-			history = entries.map(e => ({
-				id: e.id,
-				sex: e.sex,
-				height: e.height,
-				neck: e.neck,
-				waist: e.waist,
-				hip: e.hip,
-				bf: e.bf,
-				group: e.group,
-				timestamp: new Date(e.timestamp).getTime()
-			}));
-			connectWebSocket(userId);
+			history = cachedHistory;
 			return true;
-		} catch (retryErr) {
-			console.error('✗ Ошибка повторной попытки loadUserData:', retryErr);
-			const warnEl = document.getElementById('authStatus');
-			if (warnEl) {
-				warnEl.textContent = '⚠️ Не удалось обновить данные. Повтори позже.';
-				warnEl.classList.add('status-warn');
-			}
-			authenticated = false;
-			currentUser = null;
-			userId = null;
-			return false;
 		}
+		const warnEl = document.getElementById('authStatus');
+		if (warnEl) {
+			warnEl.textContent = '⚠️ Не удалось обновить данные. Повтори позже.';
+			warnEl.classList.add('status-warn');
+		}
+		authenticated = false;
+		currentUser = null;
+		userId = null;
+		return false;
 	}
 }
 
@@ -1351,6 +1376,7 @@ async function loadWaterSettings() {
 		const settings = await apiCall('/api/water-settings');
 		waterSettings = settings;
 		console.log('✓ Загружены настройки воды:', waterSettings);
+		saveCache(CACHE_KEYS.waterSettings, waterSettings);
 		
 		// Показываем секцию воды только если вес установлен
 		const waterSection = document.getElementById('waterSection');
@@ -1362,6 +1388,13 @@ async function loadWaterSettings() {
 		}
 	} catch (err) {
 		console.error('✗ Ошибка загрузки настроек воды:', err);
+		const cached = loadCache(CACHE_KEYS.waterSettings);
+		if (!navigator.onLine && cached) {
+			waterSettings = cached;
+			renderWaterQuickButtons();
+			const waterSection = document.getElementById('waterSection');
+			if (waterSettings.weight && waterSettings.weight > 0) waterSection.style.display = 'block';
+		}
 	}
 }
 
@@ -1370,10 +1403,17 @@ async function loadWaterLogs() {
 		const logs = await apiCall('/api/water-logs');
 		waterLogs = logs;
 		console.log('✓ Загружены логи воды:', waterLogs);
+		saveCache(CACHE_KEYS.waterLogs, waterLogs);
 		renderWaterProgress();
 		renderWaterLogs();
 	} catch (err) {
 		console.error('✗ Ошибка загрузки логов воды:', err);
+		const cached = loadCache(CACHE_KEYS.waterLogs, []);
+		if (!navigator.onLine && cached.length) {
+			waterLogs = cached;
+			renderWaterProgress();
+			renderWaterLogs();
+		}
 	}
 }
 
@@ -1386,6 +1426,12 @@ async function loadWaterChartData(period = 'day') {
 		renderWaterChart();
 	} catch (err) {
 		console.error('✗ Ошибка загрузки данных для графика воды:', err);
+		const cached = loadCache(CACHE_KEYS.waterLogs, []);
+		if (!navigator.onLine && cached.length) {
+			waterChartData = cached.slice().reverse();
+			currentWaterChartPeriod = period;
+			renderWaterChart();
+		}
 	}
 }
 
@@ -1486,6 +1532,20 @@ async function addWaterLog(amount, drinkType = 'вода') {
 		showWaterNotification(`✅ Добавлено ${amount}мл`);
 	} catch (err) {
 		console.error('✗ Ошибка добавления воды:', err);
+		// Если оффлайн — добавляем локально и покажем, что уйдет в очередь
+		if (!navigator.onLine) {
+			const tempLog = {
+				id: `temp-${Date.now()}`,
+				amount,
+				drink_type: drinkType,
+				logged_at: new Date().toISOString()
+			};
+			waterLogs = [tempLog, ...waterLogs];
+			renderWaterProgress();
+			renderWaterLogs();
+			showWaterNotification(`📴 Оффлайн: сохранено ${amount}мл, синхронизация при сети`);
+			return;
+		}
 	}
 }
 
@@ -1866,7 +1926,27 @@ async function handleCalculate() {
 		// которое добавит запись и обновит интерфейс
 		console.log('✓ Запись отправлена на сервер, ждём WebSocket обновления');
 	} catch (err) {
-		currentNote.textContent = '❌ Ошибка сохранения: ' + err.message;
+		if (!navigator.onLine) {
+			// Оффлайн: добавляем временную запись локально
+			const temp = {
+				id: `temp-${Date.now()}`,
+				sex: sexState.current,
+				height: h,
+				neck: n,
+				waist: w,
+				hip: sexState.current === 'female' ? hip : null,
+				bf,
+				group: group ? group.label : '',
+				timestamp: Date.now()
+			};
+			history.push(temp);
+			renderHistory();
+			drawChart();
+			saveCache(CACHE_KEYS.history, history);
+			currentNote.textContent = '📴 Оффлайн: запись сохранена локально, синхронизируется при сети';
+		} else {
+			currentNote.textContent = '❌ Ошибка сохранения: ' + err.message;
+		}
 	}
 }
 
@@ -1879,8 +1959,18 @@ async function deleteEntry(id) {
 		}
 		renderHistory();
 		drawChart();
+		saveCache(CACHE_KEYS.history, history);
 	} catch (err) {
 		console.error('Ошибка удаления:', err);
+		if (!navigator.onLine) {
+			history = history.filter((item) => item.id !== id);
+			renderHistory();
+			drawChart();
+			saveCache(CACHE_KEYS.history, history);
+			alert('📴 Оффлайн: запись удалена локально, синхронизация при сети');
+		} else {
+			alert('Ошибка удаления: ' + err.message);
+		}
 	}
 }
 
@@ -1958,6 +2048,25 @@ async function clearHistory() {
 	}
 	
 	if (!confirm('Вы уверены? Это действие необратимо.')) return;
+
+	if (!navigator.onLine) {
+		const now = Date.now();
+		history.forEach((item, idx) => {
+			offlineQueue.push({
+				endpoint: `/api/history/${item.id}`,
+				options: { method: 'DELETE' },
+				timestamp: now + idx
+			});
+		});
+		saveOfflineQueue();
+		history = [];
+		renderHistory();
+		drawChart();
+		saveCache(CACHE_KEYS.history, history);
+		currentResult.textContent = '—';
+		currentNote.textContent = '📴 Оффлайн: история очищена локально, синхронизируется при сети';
+		return;
+	}
 	
 	try {
 		for (let i = history.length - 1; i >= 0; i--) {
@@ -1966,6 +2075,7 @@ async function clearHistory() {
 		history = [];
 		renderHistory();
 		drawChart();
+		saveCache(CACHE_KEYS.history, history);
 		currentResult.textContent = '—';
 		currentNote.textContent = 'История очищена';
 	} catch (err) {
