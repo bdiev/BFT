@@ -1075,6 +1075,33 @@ canvas {
 /* Стили модали воды */
 #waterSettingsModal .modal-content {
 	max-width: 500px;
+	max-height: 85vh;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+#waterSettingsModal .modal-body {
+	flex: 1;
+	overflow-y: auto;
+	padding-right: 8px;
+}
+
+#waterSettingsModal .modal-body::-webkit-scrollbar {
+	width: 6px;
+}
+
+#waterSettingsModal .modal-body::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+#waterSettingsModal .modal-body::-webkit-scrollbar-thumb {
+	background: rgba(99, 102, 241, 0.3);
+	border-radius: 3px;
+}
+
+#waterSettingsModal .modal-body::-webkit-scrollbar-thumb:hover {
+	background: rgba(99, 102, 241, 0.5);
 }
 
 select {

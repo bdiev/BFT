@@ -657,7 +657,7 @@ function calculateDailyWaterGoal(weight, activity) {
 	else if (activity === 'moderate') baseGoal *= 1;
 	else if (activity === 'high') baseGoal *= 1.3;
 	
-	return Math.round(baseGoal / 100) * 100; // Округляем до 100мл
+	return Math.round(baseGoal); // Без округления, точный расчет
 }
 
 async function loadWaterSettings() {
@@ -705,8 +705,9 @@ function renderWaterQuickButtons() {
 	waterSettings.quick_buttons.forEach(btn => {
 		const button = document.createElement('button');
 		button.className = 'water-quick-btn';
-		const emoji = btn.name.split(' ')[0];
-		const label = btn.name.substring(btn.name.indexOf(' ') + 1);
+		const parts = btn.name.split(' ');
+		const emoji = parts[0];
+		const label = parts[1]; // Только название, без количества
 		button.innerHTML = `
 			<div style="font-size: 16px; margin-bottom: 4px;">${emoji}</div>
 			<div style="font-size: 13px; color: var(--text); font-weight: 600;">${label}</div>
@@ -921,6 +922,7 @@ async function saveWaterSettings() {
 		});
 		
 		await loadWaterSettings();
+		await loadWaterLogs();
 		closeWaterSettingsModal();
 		showWaterNotification('✅ Настройки сохранены');
 	} catch (err) {
