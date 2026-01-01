@@ -613,6 +613,8 @@ async function handleDeleteAccount() {
 		authStatus.classList.add('status-warn');
 	}
 }
+
+function toggleSignupForm() {
 	const loginForm = document.getElementById('loginForm');
 	const isSignupShown = signupForm.style.display === 'block';
 	
