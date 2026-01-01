@@ -745,6 +745,7 @@ const userSelect = document.getElementById('userSelect');
 const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const logoutHeaderBtn = document.getElementById('logoutHeaderBtn');
 const authStatus = document.getElementById('authStatus');
 const currentUserPill = document.getElementById('current-user-pill');
 
@@ -862,6 +863,7 @@ function updateUserBadge() {
 			currentUserPill.classList.add('status-ok');
 			currentUserPill.style.display = 'inline-block';
 			openAuthModal.style.display = 'none';
+			logoutHeaderBtn && (logoutHeaderBtn.style.display = 'inline-flex');
 			loginForm.style.display = 'none';
 			logoutForm.style.display = 'block';
 			modalTitle.textContent = 'Аккаунт';
@@ -879,13 +881,14 @@ function updateUserBadge() {
 			currentUserPill.classList.remove('status-ok');
 			currentUserPill.classList.add('status-warn');
 			openAuthModal.style.display = '';
+			logoutHeaderBtn && (logoutHeaderBtn.style.display = 'none');
 			loginForm.style.display = 'block';
 			logoutForm.style.display = 'none';
 			signupForm.style.display = 'none';
 			logoutBtn.style.display = 'none';
 			loginBtn.style.display = '';
-		toggleSignupBtn.style.display = '';
-	}
+			toggleSignupBtn.style.display = '';
+		}
 	} catch (err) {
 		console.error('❌ Ошибка в updateUserBadge:', err);
 	}
@@ -2308,6 +2311,7 @@ loginBtn.addEventListener('click', () => {
 	handleLogin();
 });
 logoutBtn.addEventListener('click', handleLogout);
+logoutHeaderBtn?.addEventListener('click', handleLogout);
 signupBtn?.addEventListener('click', handleSignup);
 toggleSignupBtn?.addEventListener('click', toggleSignupForm);
 backToLoginBtn?.addEventListener('click', toggleSignupForm);
