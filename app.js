@@ -705,11 +705,14 @@ function renderWaterQuickButtons() {
 	waterSettings.quick_buttons.forEach(btn => {
 		const button = document.createElement('button');
 		button.className = 'water-quick-btn';
+		const emoji = btn.name.split(' ')[0];
+		const label = btn.name.substring(btn.name.indexOf(' ') + 1);
 		button.innerHTML = `
-			<div style="font-size: 18px; margin-bottom: 4px;">${btn.name.split(' ')[0]}</div>
-			<div style="font-size: 12px; color: var(--text-muted);">${btn.amount}мл</div>
+			<div style="font-size: 16px; margin-bottom: 4px;">${emoji}</div>
+			<div style="font-size: 13px; color: var(--text); font-weight: 600;">${label}</div>
+			<div style="font-size: 11px; color: var(--text-muted);">${btn.amount}мл</div>
 		`;
-		button.addEventListener('click', () => addWaterLog(btn.amount, btn.name.split(' ')[1] || 'вода'));
+		button.addEventListener('click', () => addWaterLog(btn.amount, label));
 		container.appendChild(button);
 	});
 }
@@ -1295,6 +1298,19 @@ document.getElementById('waterSettingsBtn')?.addEventListener('click', openWater
 document.getElementById('closeWaterSettingsModal')?.addEventListener('click', closeWaterSettingsModal);
 document.getElementById('closeWaterSettingsBtn')?.addEventListener('click', closeWaterSettingsModal);
 document.getElementById('saveWaterSettingsBtn')?.addEventListener('click', saveWaterSettings);
+document.getElementById('recalculateWaterBtn')?.addEventListener('click', () => {
+	const weight = parseFloat(document.getElementById('waterWeight').value);
+	const activity = document.getElementById('waterActivity').value;
+	
+	if (!weight || weight <= 0) {
+		alert('Сначала введи вес');
+		return;
+	}
+	
+	const calculated = calculateDailyWaterGoal(weight, activity);
+	document.getElementById('waterGoal').value = calculated;
+	showWaterNotification(`✅ Норма пересчитана: ${calculated}мл`);
+});
 document.getElementById('addQuickButtonBtn')?.addEventListener('click', () => {
 	if (!waterSettings.quick_buttons) waterSettings.quick_buttons = [];
 	waterSettings.quick_buttons.push({ name: '💧 Вода', amount: 500 });

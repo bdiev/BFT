@@ -294,8 +294,9 @@
 
 				<div style="margin-bottom: 20px;">
 					<label for="waterGoal" class="label">Дневная норма (мл)</label>
-					<input id="waterGoal" type="number" placeholder="Например, 2000" style="width: 100%; padding: 10px; border: 1px solid rgba(99, 102, 241, 0.2); background: rgba(99, 102, 241, 0.05); border-radius: 8px; color: var(--text);" />
-					<p class="muted" style="font-size: 12px; margin-top: 6px;">Оставь пусто, и норма рассчитается автоматически</p>
+				<div style="display: flex; gap: 10px;">
+					<input id="waterGoal" type="number" placeholder="Например, 2000" style="flex: 1; padding: 10px; border: 1px solid rgba(99, 102, 241, 0.2); background: rgba(99, 102, 241, 0.05); border-radius: 8px; color: var(--text);" />
+					<button id="recalculateWaterBtn" class="ghost" style="padding: 10px 16px; white-space: nowrap;">🔄 Пересчет</button>
 				</div>
 
 				<div style="margin-bottom: 20px;">
