@@ -1,4 +1,4 @@
-const CACHE = 'bf-tracker-v1';
+const CACHE = 'bf-tracker-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -25,6 +25,15 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Не кешируем API-запросы, чтобы не получать устаревшие данные пользователя
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached =>
       cached || fetch(event.request).then(response => {
