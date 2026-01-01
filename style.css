@@ -954,7 +954,6 @@ canvas {
 
 /* Стили для модали записи */
 #entryDetailModal {
-	display: none;
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -966,10 +965,14 @@ canvas {
 	align-items: center;
 	z-index: 1001;
 	padding: 20px;
+	display: none;
+	opacity: 0;
+	transition: opacity 0.24s ease;
 }
 
 #entryDetailModal.active {
 	display: flex;
+	opacity: 1;
 }
 
 #entryDetailModal .modal-content {

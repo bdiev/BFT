@@ -625,13 +625,12 @@ function showEntryDetail(entry) {
 	`;
 	
 	const modal = document.getElementById('entryDetailModal');
-	modal.style.display = 'flex';
-	document.body.style.overflow = 'hidden';
+		modal.classList.add('active');
 }
 
 function closeEntryModal() {
 	const modal = document.getElementById('entryDetailModal');
-	modal.style.display = 'none';
+	modal.classList.remove('active');
 	document.body.style.overflow = '';
 }
 
