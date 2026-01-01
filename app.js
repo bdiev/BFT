@@ -455,10 +455,12 @@ function setCardVisibilityStatus(message, tone = 'muted') {
 async function loadUserSettings() {
 	try {
 		const settings = await apiCall('/api/user-settings');
-		console.log('📥 Загруженные настройки с сервера:', settings);
-		userSettings.card_visibility = normalizeCardVisibility(settings.card_visibility);
+		console.log('📥 ПОЛУЧЕНО с сервера при загрузке:', JSON.stringify(settings));
+		console.log('📦 card_visibility от сервера:', settings.card_visibility);
+		const loadedVis = normalizeCardVisibility(settings.card_visibility);
+		console.log('✓ После нормализации:', loadedVis);
+		userSettings.card_visibility = loadedVis;
 		userSettings.card_order = normalizeCardOrder(settings.card_order);
-		console.log('✓ Нормализованные настройки:', userSettings);
 		setCardVisibilityStatus('Настройки карточек загружены');
 	} catch (err) {
 		console.error('Не удалось загрузить настройки пользователя:', err.message);
@@ -475,6 +477,7 @@ async function saveUserSettings(partialVisibility = {}, newOrder = null) {
 	const mergedVisibility = normalizeCardVisibility({ ...userSettings.card_visibility, ...partialVisibility });
 	const mergedOrder = normalizeCardOrder(newOrder ?? userSettings.card_order);
 	console.log('💾 saveUserSettings:', { partialVisibility, mergedVisibility, mergedOrder });
+	console.log('📤 ОТПРАВЛЯЮ на сервер:', JSON.stringify({ card_visibility: mergedVisibility, card_order: mergedOrder }));
 	userSettings.card_visibility = mergedVisibility;
 	userSettings.card_order = mergedOrder;
 	applyCardVisibility();
@@ -482,10 +485,11 @@ async function saveUserSettings(partialVisibility = {}, newOrder = null) {
 	applyCardOrder();
 	setCardVisibilityStatus('Сохраняю...');
 	try {
-		await apiCall('/api/user-settings', {
+		const response = await apiCall('/api/user-settings', {
 			method: 'POST',
 			body: JSON.stringify({ card_visibility: mergedVisibility, card_order: mergedOrder })
 		});
+		console.log('📥 ПОЛУЧЕНО с сервера:', response);
 		console.log('✓ Настройки сохранены на сервер');
 		setCardVisibilityStatus('✓ Сохранено');
 	} catch (err) {
