@@ -378,6 +378,9 @@ async function handleLogin() {
 		passwordInput.value = '';
 		updateUserBadge();
 		
+		// Даём браузеру время на перерендер DOM перед инициализацией canvas
+		await new Promise(resolve => setTimeout(resolve, 100));
+		
 		// Инициализируем canvas размеры перед отрисовкой
 		initCanvasSize();
 		
