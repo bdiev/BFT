@@ -1734,6 +1734,58 @@ function toggleChangePasswordForm() {
 	accountActions.style.display = isHidden ? 'none' : 'block';
 }
 
+// Handle password change inside account modal
+async function handleChangePassword() {
+	const currentPassword = document.getElementById('currentPassword')?.value.trim();
+	const newPassword = document.getElementById('newPassword')?.value.trim();
+	const confirmPassword = document.getElementById('confirmPassword')?.value.trim();
+	const statusEl = document.getElementById('passwordChangeStatus');
+
+	if (!statusEl) return;
+
+	if (!currentPassword || !newPassword || !confirmPassword) {
+		statusEl.textContent = '❌ Заполни все поля';
+		statusEl.style.color = '#ef4444';
+		return;
+	}
+
+	if (newPassword.length < 4) {
+		statusEl.textContent = '❌ Пароль должен быть не менее 4 символов';
+		statusEl.style.color = '#ef4444';
+		return;
+	}
+
+	if (newPassword !== confirmPassword) {
+		statusEl.textContent = '❌ Пароли не совпадают';
+		statusEl.style.color = '#ef4444';
+		return;
+	}
+
+	try {
+		statusEl.textContent = '⏳ Обновляю пароль...';
+		statusEl.style.color = '#a5b4fc';
+
+		await apiCall('/api/change-password', {
+			method: 'POST',
+			body: JSON.stringify({ currentPassword, newPassword })
+		});
+
+		statusEl.textContent = '✓ Пароль успешно изменён!';
+		statusEl.style.color = '#86efac';
+
+		setTimeout(() => {
+			document.getElementById('currentPassword').value = '';
+			document.getElementById('newPassword').value = '';
+			document.getElementById('confirmPassword').value = '';
+			toggleChangePasswordForm();
+		}, 1500);
+	} catch (err) {
+		console.error('🔐 Ошибка смены пароля:', err);
+		statusEl.textContent = '❌ ' + err.message;
+		statusEl.style.color = '#ef4444';
+	}
+}
+
 async function saveWaterSettings() {
 	const weight = parseFloat(document.getElementById('waterWeight').value);
 	const activity = document.getElementById('waterActivity').value;
