@@ -291,12 +291,12 @@ function buildWaterSeries(period, logs, resetTime = '00:00') {
 function normalizeCardVisibility(visibility = {}) {
 	const merged = { ...defaultCardVisibility(), ...(visibility || {}) };
 	return {
-		form: merged.form !== false,
-		history: merged.history !== false,
-		chart: merged.chart !== false,
-		waterTracker: merged.waterTracker !== false,
-		waterChart: merged.waterChart !== false,
-		lastResult: merged.lastResult !== false
+		form: merged.form === true,
+		history: merged.history === true,
+		chart: merged.chart === true,
+		waterTracker: merged.waterTracker === true,
+		waterChart: merged.waterChart === true,
+		lastResult: merged.lastResult === true
 	};
 }
 
@@ -426,7 +426,7 @@ function renderCardOrderEditor() {
 	});
 }
 
-function moveCardOrder(key, direction) {
+async function moveCardOrder(key, direction) {
 	const order = normalizeCardOrder(userSettings.card_order);
 	const idx = order.indexOf(key);
 	const target = idx + direction;
@@ -434,8 +434,8 @@ function moveCardOrder(key, direction) {
 	[order[idx], order[target]] = [order[target], order[idx]];
 	userSettings.card_order = order;
 	applyCardOrder();
+	await saveUserSettings({}, order);
 	renderCardOrderEditor();
-	saveUserSettings({}, order);
 }
 
 function setCardVisibilityStatus(message, tone = 'muted') {
