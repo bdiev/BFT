@@ -60,6 +60,29 @@
 						<p style="font-size: 24px; font-weight: 700; margin: 8px 0 16px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="userDisplayName">User</p>
 						<p class="muted" style="margin: 0; font-size: 13px;">Твои данные сохраняются безопасно на сервере</p>
 					</div>
+
+					<div id="cardVisibilitySection" class="account-toggle" style="border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 14px; margin-bottom: 16px; background: rgba(99, 102, 241, 0.05);">
+						<h3 style="margin: 0 0 8px; font-size: 16px; font-weight: 700;">Видимость карточек</h3>
+						<p class="muted" style="margin: 0 0 12px; font-size: 12px;">Выбери, что показывать на главной странице</p>
+						<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleFormCard" /> Форма расчёта
+							</label>
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleHistoryCard" /> История прогресса
+							</label>
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleChartCard" /> График жира
+							</label>
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleWaterCard" /> Трекер воды
+							</label>
+							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+								<input type="checkbox" id="toggleWaterChartCard" /> График воды
+							</label>
+						</div>
+						<p class="muted" id="cardVisibilityStatus" style="margin: 10px 0 0; font-size: 12px;"></p>
+					</div>
 					
 					<div id="changePasswordForm" style="display: none; text-align: left;">
 						<h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Смена пароля</h3>
@@ -214,7 +237,7 @@
 				</div>
 			</div>
 
-			<div class="card">
+			<div class="card" id="history-card">
 				<div style="display:flex; justify-content: space-between; align-items:center;">
 					<strong>Твой прогресс</strong>
 					<span class="muted" id="history-count">0 записей</span>

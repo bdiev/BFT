@@ -19,6 +19,18 @@ let currentWaterPeriod = 'day';
 let currentWaterChartPeriod = 'day';
 let waterChartData = [];
 
+const defaultCardVisibility = () => ({
+	form: true,
+	history: true,
+	chart: true,
+	waterTracker: true,
+	waterChart: true
+});
+
+let userSettings = {
+	card_visibility: defaultCardVisibility()
+};
+
 // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ДАТЫ/ВРЕМЕНИ =====
 function formatLocalDateTime(timestamp, options = {}) {
 	const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -166,6 +178,85 @@ function buildWaterSeries(period, logs, resetTime = '00:00') {
 	return series;
 }
 
+function normalizeCardVisibility(visibility = {}) {
+	const merged = { ...defaultCardVisibility(), ...(visibility || {}) };
+	return {
+		form: merged.form !== false,
+		history: merged.history !== false,
+		chart: merged.chart !== false,
+		waterTracker: merged.waterTracker !== false,
+		waterChart: merged.waterChart !== false
+	};
+}
+
+function toggleCardElement(el, visible) {
+	if (!el) return;
+	el.classList.toggle('hidden-by-pref', !visible);
+}
+
+function applyCardVisibility() {
+	const vis = normalizeCardVisibility(userSettings.card_visibility);
+	toggleCardElement(document.getElementById('form-card'), vis.form);
+	toggleCardElement(document.getElementById('history-card'), vis.history);
+	toggleCardElement(document.getElementById('chart-section'), vis.chart);
+	toggleCardElement(document.getElementById('waterSection'), vis.waterTracker);
+	toggleCardElement(document.getElementById('waterChartSection'), vis.waterChart);
+}
+
+function syncCardVisibilityUI() {
+	const vis = normalizeCardVisibility(userSettings.card_visibility);
+	const map = {
+		toggleFormCard: 'form',
+		toggleHistoryCard: 'history',
+		toggleChartCard: 'chart',
+		toggleWaterCard: 'waterTracker',
+		toggleWaterChartCard: 'waterChart'
+	};
+	Object.entries(map).forEach(([id, key]) => {
+		const el = document.getElementById(id);
+		if (el) el.checked = !!vis[key];
+	});
+}
+
+function setCardVisibilityStatus(message, tone = 'muted') {
+	const el = document.getElementById('cardVisibilityStatus');
+	if (!el) return;
+	el.textContent = message || '';
+	el.style.color = tone === 'error' ? '#ef4444' : '#a5b4fc';
+}
+
+async function loadUserSettings() {
+	try {
+		const settings = await apiCall('/api/user-settings');
+		userSettings.card_visibility = normalizeCardVisibility(settings.card_visibility);
+		setCardVisibilityStatus('Настройки карточек загружены');
+	} catch (err) {
+		console.error('Не удалось загрузить настройки пользователя:', err.message);
+		userSettings.card_visibility = defaultCardVisibility();
+		setCardVisibilityStatus('Не удалось загрузить настройки, показаны все карточки', 'error');
+	}
+	applyCardVisibility();
+	syncCardVisibilityUI();
+}
+
+async function saveUserSettings(partialVisibility = {}) {
+	const merged = normalizeCardVisibility({ ...userSettings.card_visibility, ...partialVisibility });
+	userSettings.card_visibility = merged;
+	applyCardVisibility();
+	syncCardVisibilityUI();
+	setCardVisibilityStatus('Сохраняю...');
+	try {
+		await apiCall('/api/user-settings', {
+			method: 'POST',
+			body: JSON.stringify({ card_visibility: merged })
+		});
+		setCardVisibilityStatus('✓ Сохранено');
+	} catch (err) {
+		console.error('Не удалось сохранить настройки карточек:', err.message);
+		setCardVisibilityStatus('Не удалось сохранить', 'error');
+	}
+}
+
 // ===== API ФУНКЦИИ =====
 async function apiCall(endpoint, options = {}) {
 	try {
@@ -241,6 +332,10 @@ function connectWebSocket(userId) {
 						drawChart();
 						updateLast(history[history.length - 1]);
 					}
+				} else if (msg.updateType === 'waterAdded' || msg.updateType === 'waterDeleted') {
+					console.log('💧 Обновление воды в реал-тайме:', msg.updateType, msg.data);
+					loadWaterLogs();
+					loadWaterChartData(currentWaterChartPeriod || 'day');
 				}
 			}
 		} catch (e) {
@@ -522,6 +617,8 @@ async function handleSignup() {
 			status.style.color = '#ef4444';
 			return;
 		}
+
+		await loadUserSettings();
 		
 		status.textContent = '✓ Аккаунт создан! Добро пожаловать!';
 		status.style.color = '#86efac';
@@ -574,6 +671,7 @@ async function autoLogin(username, password) {
 			console.error('❌ Ошибка загрузки данных');
 			return false;
 		}
+		await loadUserSettings();
 		
 		console.log('✓ Автоматический вход успешен:', currentUser);
 		updateUserBadge();
@@ -626,6 +724,8 @@ async function handleLogin() {
 			authStatus.classList.add('status-warn');
 			return;
 		}
+
+		await loadUserSettings();
 		
 		authStatus.textContent = '✓ Привет, ' + currentUser + '! Твои данные загружены.';
 		authStatus.classList.remove('status-warn');
@@ -682,6 +782,7 @@ async function handleLogout() {
 		userId = null;
 		history = [];
 		waterLogs = [];
+		userSettings.card_visibility = defaultCardVisibility();
 		userSelect.value = '';
 		passwordInput.value = '';
 		authStatus.textContent = 'До свидания! Ты вышел.';
@@ -690,6 +791,8 @@ async function handleLogout() {
 		renderHistory();
 		drawChart();
 		updateLast();
+		applyCardVisibility();
+		syncCardVisibilityUI();
 	// Убираем сообщение через 0.5 секунды с плавным исчезновением
 	setTimeout(() => {
 		authStatus.classList.add('status-fade-out');
@@ -743,6 +846,7 @@ async function handleDeleteAccount() {
 		userId = null;
 		history = [];
 		waterLogs = [];
+		userSettings.card_visibility = defaultCardVisibility();
 		userSelect.value = '';
 		passwordInput.value = '';
 		
@@ -752,6 +856,8 @@ async function handleDeleteAccount() {
 		renderHistory();
 		drawChart();
 		updateLast();
+		applyCardVisibility();
+		syncCardVisibilityUI();
 		
 		// Закрываем модалку через 1.5 секунды
 		setTimeout(() => {
@@ -1704,6 +1810,22 @@ document.getElementById('cancelChangePassword')?.addEventListener('click', toggl
 document.getElementById('deleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
 document.getElementById('landingLoginBtn')?.addEventListener('click', openModal);
 
+const cardToggleMap = {
+	toggleFormCard: 'form',
+	toggleHistoryCard: 'history',
+	toggleChartCard: 'chart',
+	toggleWaterCard: 'waterTracker',
+	toggleWaterChartCard: 'waterChart'
+};
+
+Object.entries(cardToggleMap).forEach(([id, key]) => {
+	const el = document.getElementById(id);
+	if (!el) return;
+	el.addEventListener('change', (e) => {
+		saveUserSettings({ [key]: e.target.checked });
+	});
+});
+
 // Обработчики для воды
 document.getElementById('waterSettingsBtn')?.addEventListener('click', openWaterSettingsModal);
 document.getElementById('closeWaterSettingsModal')?.addEventListener('click', closeWaterSettingsModal);
@@ -1774,6 +1896,8 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 	try {
 		console.log('🚀 Инициализация приложения...');
 		console.log('✓ DOM элементы загружены');
+		applyCardVisibility();
+		syncCardVisibilityUI();
 		
 		// Проверяем есть ли сохраненные данные входа
 		const savedUsername = localStorage.getItem('rememberMe_username');
@@ -1789,6 +1913,9 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 		} else {
 			// Обычная загрузка данных пользователя (через cookies если есть)
 			await loadUserData();
+			if (authenticated) {
+				await loadUserSettings();
+			}
 		}
 		
 		console.log('✓ После loadUserData - authenticated:', authenticated, 'currentUser:', currentUser, 'история:', history.length);

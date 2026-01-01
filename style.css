@@ -1222,3 +1222,16 @@ select {
 .segmented button:hover {
 	background: rgba(99, 102, 241, 0.2);
 }
+
+.hidden-by-pref {
+	display: none !important;
+}
+
+.account-toggle label {
+	font-weight: 600;
+}
+
+.account-toggle input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+}

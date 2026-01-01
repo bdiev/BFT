@@ -93,6 +93,21 @@ db.serialize(() => {
     else console.log('✓ Таблица entries готова');
   });
 
+  // Таблица пользовательских настроек (видимость карточек и др.)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      card_visibility TEXT DEFAULT '{"form":1,"history":1,"chart":1,"waterTracker":1,"waterChart":1}',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы user_settings:', err);
+    else console.log('✓ Таблица user_settings готова');
+  });
+
   // Таблица настроек воды
   db.run(`
     CREATE TABLE IF NOT EXISTS water_settings (
@@ -254,6 +269,9 @@ app.post('/api/delete-account', authenticateToken, (req, res) => {
     
     // Удаляем настройки воды
     db.run('DELETE FROM water_settings WHERE user_id = ?', [req.userId]);
+
+    // Удаляем пользовательские настройки
+    db.run('DELETE FROM user_settings WHERE user_id = ?', [req.userId]);
     
     // Удаляем логи воды
     db.run('DELETE FROM water_logs WHERE user_id = ?', [req.userId]);
@@ -274,6 +292,71 @@ app.post('/api/delete-account', authenticateToken, (req, res) => {
 // Получить текущего пользователя
 app.get('/api/me', authenticateToken, (req, res) => {
   res.json({ id: req.userId, username: req.username });
+});
+
+const DEFAULT_CARD_VISIBILITY = {
+  form: true,
+  history: true,
+  chart: true,
+  waterTracker: true,
+  waterChart: true
+};
+
+function parseCardVisibility(raw) {
+  if (!raw) return { ...DEFAULT_CARD_VISIBILITY };
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return {
+      form: parsed.form !== false,
+      history: parsed.history !== false,
+      chart: parsed.chart !== false,
+      waterTracker: parsed.waterTracker !== false,
+      waterChart: parsed.waterChart !== false
+    };
+  } catch (e) {
+    console.warn('Не удалось распарсить card_visibility, использую дефолт:', e.message);
+    return { ...DEFAULT_CARD_VISIBILITY };
+  }
+}
+
+// Получить настройки пользователя
+app.get('/api/user-settings', authenticateToken, (req, res) => {
+  db.get('SELECT card_visibility FROM user_settings WHERE user_id = ?', [req.userId], (err, row) => {
+    if (err) {
+      console.error('Ошибка чтения user_settings:', err.message);
+      return res.status(500).json({ error: 'Ошибка БД' });
+    }
+    const cardVisibility = row ? parseCardVisibility(row.card_visibility) : { ...DEFAULT_CARD_VISIBILITY };
+    res.json({ card_visibility: cardVisibility });
+  });
+});
+
+// Обновить настройки пользователя
+app.post('/api/user-settings', authenticateToken, (req, res) => {
+  const incoming = req.body?.card_visibility || {};
+  const cardVisibility = {
+    form: incoming.form !== false,
+    history: incoming.history !== false,
+    chart: incoming.chart !== false,
+    waterTracker: incoming.waterTracker !== false,
+    waterChart: incoming.waterChart !== false
+  };
+
+  const serialized = JSON.stringify(cardVisibility);
+
+  db.run(
+    `INSERT INTO user_settings (user_id, card_visibility, updated_at)
+     VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(user_id) DO UPDATE SET card_visibility = excluded.card_visibility, updated_at = CURRENT_TIMESTAMP`,
+    [req.userId, serialized],
+    function(err) {
+      if (err) {
+        console.error('Ошибка сохранения user_settings:', err.message);
+        return res.status(500).json({ error: 'Ошибка БД' });
+      }
+      res.json({ card_visibility: cardVisibility });
+    }
+  );
 });
 
 // Получить историю пользователя
@@ -469,12 +552,14 @@ app.post('/api/water-logs', authenticateToken, (req, res) => {
     [req.userId, amount, drink_type || 'вода'],
     function(err) {
       if (err) return res.status(500).json({ error: 'Ошибка сохранения' });
-      res.json({ 
+      const payload = {
         id: this.lastID,
         amount, 
         drink_type: drink_type || 'вода',
         logged_at: new Date().toISOString()
-      });
+      };
+      res.json(payload);
+      notifyUserUpdate(req.userId, 'waterAdded', payload);
     }
   );
 });
@@ -485,6 +570,7 @@ app.delete('/api/water-logs/:id', authenticateToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Ошибка удаления' });
     if (this.changes === 0) return res.status(404).json({ error: 'Лог не найден' });
     res.json({ message: 'Удалено' });
+    notifyUserUpdate(req.userId, 'waterDeleted', { id: parseInt(req.params.id) });
   });
 });
 
