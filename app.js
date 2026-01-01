@@ -350,7 +350,11 @@ function syncCardVisibilityUI() {
 }
 
 function applyCardOrder() {
+	const container = document.getElementById('cardsContainer');
+	if (!container) return;
+
 	const order = normalizeCardOrder(userSettings.card_order);
+	const vis = normalizeCardVisibility(userSettings.card_visibility);
 	const idMap = {
 		form: 'form-card',
 		history: 'history-card',
@@ -359,11 +363,15 @@ function applyCardOrder() {
 		waterChart: 'waterChartSection',
 		lastResult: 'last-result-card'
 	};
-	order.forEach((key, idx) => {
+
+	order.forEach((key) => {
 		const elId = idMap[key];
 		if (!elId) return;
 		const el = document.getElementById(elId);
-		if (el) el.style.order = idx;
+		if (!el) return;
+		el.classList.toggle('hidden-by-pref', !vis[key]);
+		// Реальное перемещение элемента, чтобы порядок менялся в гриде
+		container.appendChild(el);
 	});
 }
 

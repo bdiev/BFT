@@ -143,11 +143,6 @@
 				<h1 class="title">Личный блокнот</h1>
 				<p class="subtitle">Веди учет своих данных и прогресса</p>
 			</div>
-			<div class="stat card" id="last-result-card" style="min-width: 200px;">
-				<span class="label">Последний результат</span>
-				<span class="value" id="last-result">—</span>
-				<span class="muted" id="last-meta">Нет данных</span>
-			</div>
 		</header>
 
 		<!-- Landing Page (для неавторизованных) -->
@@ -202,7 +197,13 @@
 		</section>
 
 		<section id="appContent" style="display: none;">
-			<section class="grid">
+			<div id="cardsContainer" class="cards-grid">
+			<div class="stat card" id="last-result-card" style="min-width: 200px;">
+				<span class="label">Последний результат</span>
+				<span class="value" id="last-result">—</span>
+				<span class="muted" id="last-meta">Нет данных</span>
+			</div>
+
 			<div class="card" id="form-card">
 				<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap;">
 					<div>
@@ -256,9 +257,8 @@
 				<div class="history" id="history"></div>
 				<div id="entryDetailInline" class="entry-detail-inline" aria-live="polite" style="display:none;"></div>
 			</div>
-		</section>
 
-		<section class="card" id="chart-section" style="margin-top: 40px;">
+		<section class="card" id="chart-section">
 			<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap;">
 				<div>
 					<strong>Визуально видна траектория</strong>
@@ -269,7 +269,7 @@
 		</section>
 
 		<!-- СЕКЦИЯ ОТСЛЕЖИВАНИЯ ВОДЫ -->
-		<section id="waterSection" class="card" style="margin-top: 40px; display: none;">
+		<section id="waterSection" class="card" style="display: none;">
 			<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap; margin-bottom: 20px;">
 				<div>
 					<strong>💧 Отслеживание воды</strong>
@@ -302,9 +302,9 @@
 				</div>
 			</div>
 		</section>
-		
-		<!-- СЕКЦИЯ ГРАФИКА ВОДЫ -->
-		<section id="waterChartSection" class="card" style="margin-top: 40px;">
+
+				<!-- СЕКЦИЯ ГРАФИКА ВОДЫ -->
+				<section id="waterChartSection" class="card">
 			<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap; margin-bottom: 20px;">
 				<div>
 					<strong>📊 График потребления воды</strong>
@@ -319,6 +319,7 @@
 			</div>
 			<canvas id="waterChart" height="300"></canvas>
 		</section>
+		</div>
 		</section>
 	</div>
 
