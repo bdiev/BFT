@@ -1243,8 +1243,10 @@ select {
 /* Footer */
 .site-footer {
 	margin-top: auto;
-	width: 100%;
-	padding: 32px 20px;
+	margin-left: -20px;
+	margin-right: -20px;
+	width: calc(100% + 40px);
+	padding: 20px;
 	background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
 	border-top: 1px solid rgba(99, 102, 241, 0.15);
 	backdrop-filter: blur(20px);
@@ -1256,7 +1258,7 @@ select {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 16px;
+	gap: 12px;
 }
 
 .footer-text {
@@ -1268,7 +1270,7 @@ select {
 
 .footer-links {
 	display: flex;
-	gap: 24px;
+	gap: 16px;
 	align-items: center;
 }
 
@@ -1300,13 +1302,13 @@ select {
 
 @media (max-width: 768px) {
 	.site-footer {
-		margin-top: 60px;
-		padding: 24px 16px;
+		margin-top: auto;
+		padding: 16px;
 	}
 	
 	.footer-links {
 		flex-direction: column;
-		gap: 12px;
+		gap: 8px;
 		width: 100%;
 	}
 	
