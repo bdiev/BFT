@@ -71,6 +71,101 @@ function getPeriodBoundary(period = 'day') {
 	return boundary;
 }
 
+function startOfTodayLocal() {
+	const d = new Date();
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+function getPeriodRange(period = 'day', resetTime = '00:00') {
+	const now = new Date();
+	const startToday = startOfTodayLocal();
+	switch (period) {
+		case 'day': {
+			const start = getLastWaterResetBoundary(resetTime);
+			const end = new Date(start);
+			end.setDate(end.getDate() + 1);
+			return { start, end };
+		}
+		case 'week': {
+			const end = new Date(startToday);
+			end.setDate(end.getDate() + 1); // до начала завтрашнего
+			const start = new Date(end);
+			start.setDate(start.getDate() - 7);
+			return { start, end };
+		}
+		case 'month': {
+			const start = new Date(startToday.getFullYear(), startToday.getMonth(), 1);
+			const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+			return { start, end };
+		}
+		case 'year': {
+			const start = new Date(startToday.getFullYear(), 0, 1);
+			const end = new Date(startToday.getFullYear() + 1, 0, 1);
+			return { start, end };
+		}
+		default: {
+			const start = getLastWaterResetBoundary(resetTime);
+			const end = new Date(start);
+			end.setDate(end.getDate() + 1);
+			return { start, end };
+		}
+	}
+}
+
+function buildWaterSeries(period, logs, resetTime = '00:00') {
+	const { start, end } = getPeriodRange(period, resetTime);
+	const filtered = logs
+		.map(l => ({ ...l, ts: normalizeTimestamp(l.logged_at) }))
+		.filter(l => l.ts >= start && l.ts < end);
+
+	const series = [];
+	if (period === 'day') {
+		// Возвращаем как есть, но отсортировано
+		return filtered.sort((a, b) => a.ts - b.ts).map(l => ({ label: formatLocalDateTime(l.ts, { hour: '2-digit', minute: '2-digit' }), amount: l.amount, raw: l }));
+	}
+
+	if (period === 'week') {
+		for (let i = 0; i < 7; i++) {
+			const dayStart = new Date(start);
+			dayStart.setDate(start.getDate() + i);
+			const dayEnd = new Date(dayStart);
+			dayEnd.setDate(dayStart.getDate() + 1);
+			const total = filtered
+				.filter(l => l.ts >= dayStart && l.ts < dayEnd)
+				.reduce((s, l) => s + l.amount, 0);
+			series.push({ label: formatLocalDateTime(dayStart, { weekday: 'short' }), amount: total, date: dayStart });
+		}
+		return series;
+	}
+
+	if (period === 'month') {
+		let d = new Date(start);
+		while (d < end) {
+			const dayStart = new Date(d);
+			const dayEnd = new Date(dayStart);
+			dayEnd.setDate(dayStart.getDate() + 1);
+			const total = filtered
+				.filter(l => l.ts >= dayStart && l.ts < dayEnd)
+				.reduce((s, l) => s + l.amount, 0);
+			series.push({ label: formatLocalDateTime(dayStart, { day: '2-digit', month: 'short' }), amount: total, date: dayStart });
+			d.setDate(d.getDate() + 1);
+		}
+		return series;
+	}
+
+	// year
+	for (let m = 0; m < 12; m++) {
+		const monthStart = new Date(start.getFullYear(), m, 1);
+		const monthEnd = new Date(start.getFullYear(), m + 1, 1);
+		const total = filtered
+			.filter(l => l.ts >= monthStart && l.ts < monthEnd)
+			.reduce((s, l) => s + l.amount, 0);
+		series.push({ label: formatLocalDateTime(monthStart, { month: 'short' }), amount: total, date: monthStart });
+	}
+	return series;
+}
+
 // ===== API ФУНКЦИИ =====
 async function apiCall(endpoint, options = {}) {
 	try {
@@ -949,44 +1044,35 @@ function renderWaterLogs() {
 	
 	container.innerHTML = '';
 
-	const periodBoundary = getPeriodBoundary(currentWaterPeriod);
-	const dayBoundary = getLastWaterResetBoundary(waterSettings.reset_time);
-	const boundary = currentWaterPeriod === 'day' ? dayBoundary : periodBoundary;
+	// Для day показываем сырые записи; для других периодов — агрегированно по дням/месяцам с нулями
+	if (currentWaterPeriod === 'day') {
+		const series = buildWaterSeries('day', waterLogs, waterSettings.reset_time);
+		series.forEach(item => {
+			const logEl = document.createElement('div');
+			logEl.className = 'water-log-item';
+			logEl.innerHTML = `
+				<div>
+					<strong>${item.amount}мл</strong> ${item.raw?.drink_type || ''}
+					<div style="font-size: 11px; color: var(--text-muted);">${item.label}</div>
+				</div>
+				<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
+			`;
+			logEl.querySelector('button').addEventListener('click', () => deleteWaterLog(item.raw?.id));
+			container.appendChild(logEl);
+		});
+		return;
+	}
 
-	// Сортируем от новых к старым (учитываем нормализацию таймзоны) и фильтруем по выбранному периоду
-	const sorted = [...waterLogs]
-		.sort((a, b) => normalizeTimestamp(b.logged_at) - normalizeTimestamp(a.logged_at))
-		.filter(log => normalizeTimestamp(log.logged_at) >= boundary);
-
-	const formatter = (ts) => {
-		switch (currentWaterPeriod) {
-			case 'day':
-				return formatLocalDateTime(normalizeTimestamp(ts), { hour: '2-digit', minute: '2-digit' });
-			case 'week': {
-				const weekday = formatLocalDateTime(normalizeTimestamp(ts), { weekday: 'short' });
-				return weekday;
-			}
-			case 'month':
-				return formatLocalDateTime(normalizeTimestamp(ts), { day: '2-digit', month: 'short' });
-			case 'year':
-				return formatLocalDateTime(normalizeTimestamp(ts), { month: 'short' });
-			default:
-				return formatLocalDateTime(normalizeTimestamp(ts), { hour: '2-digit', minute: '2-digit' });
-		}
-	};
-
-	sorted.forEach(log => {
-		const label = formatter(log.logged_at);
+	const series = buildWaterSeries(currentWaterPeriod, waterLogs, waterSettings.reset_time);
+	series.forEach(item => {
 		const logEl = document.createElement('div');
 		logEl.className = 'water-log-item';
 		logEl.innerHTML = `
 			<div>
-				<strong>${log.amount}мл</strong> ${log.drink_type}
-				<div style="font-size: 11px; color: var(--text-muted);">${label}</div>
+				<strong>${item.amount}мл</strong>
+				<div style="font-size: 11px; color: var(--text-muted);">${item.label}</div>
 			</div>
-			<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
 		`;
-		logEl.querySelector('button').addEventListener('click', () => deleteWaterLog(log.id));
 		container.appendChild(logEl);
 	});
 }
@@ -1041,6 +1127,7 @@ function renderWaterChart() {
 	const canvas = document.getElementById('waterChart');
 	if (!canvas) return;
 	
+	const series = buildWaterSeries(currentWaterChartPeriod, waterChartData, waterSettings.reset_time);
 	const ctx = canvas.getContext('2d');
 	const dpr = window.devicePixelRatio || 1;
 	const rect = canvas.getBoundingClientRect();
@@ -1052,7 +1139,7 @@ function renderWaterChart() {
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
-	if (waterChartData.length === 0) {
+	if (series.length === 0) {
 		ctx.fillStyle = '#9aa7bd';
 		ctx.font = '16px "SF Pro Display"';
 		ctx.fillText('Нет данных для отображения', 20, 40);
@@ -1062,7 +1149,7 @@ function renderWaterChart() {
 	const padding = 40;
 	const width = canvas.width / dpr;
 	const height = canvas.height / dpr;
-	const maxAmount = Math.max(...waterChartData.map(log => log.amount));
+	const maxAmount = Math.max(...series.map(point => point.amount), 1);
 	const scaleY = (amount) => height - padding - (amount / maxAmount) * (height - padding * 2);
 	
 	// Отрисовка осей
@@ -1079,9 +1166,9 @@ function renderWaterChart() {
 	ctx.lineWidth = 2;
 	ctx.beginPath();
 	
-	waterChartData.forEach((log, index) => {
-		const x = padding + (index * (width - padding * 2) / (waterChartData.length - 1));
-		const y = scaleY(log.amount);
+	series.forEach((point, index) => {
+		const x = padding + (index * (width - padding * 2) / Math.max(series.length - 1, 1));
+		const y = scaleY(point.amount);
 		
 		if (index === 0) {
 			ctx.moveTo(x, y);
@@ -1104,27 +1191,10 @@ function renderWaterChart() {
 
 	waterChartData.forEach((log, index) => {
 		const x = padding + (index * (width - padding * 2) / (waterChartData.length - 1));
-		const y = scaleY(log.amount);
-		const ts = normalizeTimestamp(log.logged_at);
-		let label;
-		switch (currentWaterChartPeriod) {
-			case 'day':
-				label = formatLocalDateTime(ts, { hour: '2-digit', minute: '2-digit' });
-				break;
-			case 'week':
-				label = formatLocalDateTime(ts, { weekday: 'short' });
-				break;
-			case 'month':
-				label = formatLocalDateTime(ts, { day: '2-digit', month: 'short' });
-				break;
-			case 'year':
-				label = formatLocalDateTime(ts, { month: 'short' });
-				break;
-			default:
-				label = formatLocalDateTime(ts, { day: '2-digit', month: 'short' });
-		}
+		const y = scaleY(point.amount);
+		const label = point.label;
 		ctx.fillText(label, x - 20, height - padding + 20);
-		ctx.fillText(`${log.amount} мл`, x - 15, y - 10);
+		ctx.fillText(`${point.amount} мл`, x - 15, y - 10);
 	});
 }
 
