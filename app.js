@@ -426,17 +426,17 @@ async function handleLogout() {
 		renderHistory();
 		drawChart();
 		updateLast();
-		// Убираем сообщение через 2 секунды с плавным исчезновением
+	// Убираем сообщение через 0.5 секунды с плавным исчезновением
+	setTimeout(() => {
+		authStatus.classList.add('status-fade-out');
 		setTimeout(() => {
-			authStatus.classList.add('status-fade-out');
-			setTimeout(() => {
-				authStatus.textContent = '';
-				authStatus.classList.remove('status-warn', 'status-fade-out');
-			}, 500);
-		}, 2000);
+			authStatus.textContent = '';
+			authStatus.classList.remove('status-warn', 'status-fade-out');
+		}, 300);
+	}, 200);
 
-		// Закрываем модалку через 3 секунды после выхода
-		setTimeout(closeModal, 3000);
+	// Закрываем модалку через 1 секунду после выхода
+	setTimeout(closeModal, 1000);
 	} catch (err) {
 		authStatus.textContent = '❌ Ошибка выхода';
 		authStatus.classList.add('status-warn');
