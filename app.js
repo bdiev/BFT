@@ -782,6 +782,27 @@ function showEntryDetail(entry) {
 		console.log('✓ Добавляю класс active к модалке');
 		modal.classList.add('active');
 		document.body.style.overflow = 'hidden';
+		
+		// Диагностика CSS
+		const computedStyle = window.getComputedStyle(modal);
+		console.log('📊 Computed styles модалки:', {
+			display: computedStyle.display,
+			opacity: computedStyle.opacity,
+			visibility: computedStyle.visibility,
+			zIndex: computedStyle.zIndex,
+			pointerEvents: computedStyle.pointerEvents
+		});
+		
+		const modalContent = modal.querySelector('.modal-content');
+		if (modalContent) {
+			const contentStyle = window.getComputedStyle(modalContent);
+			console.log('📊 Computed styles контента:', {
+				display: contentStyle.display,
+				background: contentStyle.background,
+				visibility: contentStyle.visibility
+			});
+		}
+		
 		console.log('✓ Модалка открыта');
 	} catch (err) {
 		console.error('❌ Ошибка в showEntryDetail:', err);
