@@ -1,6 +1,6 @@
 {
-  "name": "Body Fat Tracker",
-  "short_name": "Fat %",
+  "name": "Sport Notepad",
+  "short_name": "Sport Note",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0b0d12",

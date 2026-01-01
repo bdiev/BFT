@@ -2103,6 +2103,13 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 				navigator.serviceWorker.register('./service-worker.js').catch(() => {});
 			});
 		}
+
+		// Включаем анимацию входа после готовности DOM
+		document.addEventListener('DOMContentLoaded', () => {
+			window.requestAnimationFrame(() => {
+				document.body.classList.add('page-ready');
+			});
+		});
 	} catch (err) {
 		console.error('❌ КРИТИЧЕСКАЯ ОШИБКА при инициализации:', err);
 		console.error(err.stack);
