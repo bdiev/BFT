@@ -85,19 +85,16 @@ body.page-ready .site-footer {
 
 header {
 	display: flex;
-	gap: 24px;
-	align-items: flex-start;
-	flex-wrap: wrap;
 	flex-direction: column;
+	gap: 16px;
 }
 
 .header-bar {
 	display: flex;
 	align-items: center;
-	gap: auto;
-	margin-bottom: 16px;
-	flex-wrap: nowrap;
+	gap: 16px;
 	width: 100%;
+	flex-wrap: nowrap;
 }
 
 .header-bar__left {
@@ -112,22 +109,20 @@ header {
 	align-items: center;
 	gap: 8px;
 	flex-shrink: 0;
+	margin-left: auto;
 }
 
 @media (max-width: 768px) {
 	.header-bar {
 		flex-wrap: wrap;
-		gap: 12px;
 	}
 	
-	.header-bar__left {
+	.header-bar .pill {
 		flex-basis: 100%;
-		width: 100%;
 	}
 	
 	.header-bar__right {
 		flex-basis: 100%;
-		width: 100%;
 		justify-content: flex-end;
 	}
 }
