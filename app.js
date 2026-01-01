@@ -24,8 +24,7 @@ const defaultCardVisibility = () => ({
 	history: true,
 	chart: true,
 	waterTracker: true,
-	waterChart: true,
-	lastResult: true
+	waterChart: true
 });
 
 const defaultCardOrder = () => [
@@ -33,8 +32,7 @@ const defaultCardOrder = () => [
 	'history',
 	'chart',
 	'waterTracker',
-	'waterChart',
-	'lastResult'
+	'waterChart'
 ];
 
 let userSettings = {
@@ -126,7 +124,6 @@ async function processOfflineQueue() {
 			await loadWaterLogs();
 			renderHistory();
 			drawChart();
-			updateLast(history[history.length - 1]);
 		}
 	}
 }
@@ -295,8 +292,7 @@ function normalizeCardVisibility(visibility = {}) {
 		history: merged.history === true,
 		chart: merged.chart === true,
 		waterTracker: merged.waterTracker === true,
-		waterChart: merged.waterChart === true,
-		lastResult: merged.lastResult === true
+		waterChart: merged.waterChart === true
 	};
 }
 
@@ -337,8 +333,7 @@ const cardOrderNames = {
 	history: 'История прогресса',
 	chart: 'График жира',
 	waterTracker: 'Трекер воды',
-	waterChart: 'График воды',
-	lastResult: 'Последний результат'
+	waterChart: 'График воды'
 };
 
 function toggleCardElement(el, visible) {
@@ -353,7 +348,6 @@ function applyCardVisibility() {
 	toggleCardElement(document.getElementById('chart-section'), vis.chart);
 	toggleCardElement(document.getElementById('waterSection'), vis.waterTracker);
 	toggleCardElement(document.getElementById('waterChartSection'), vis.waterChart);
-	toggleCardElement(document.getElementById('last-result-card'), vis.lastResult);
 	applyCardOrder();
 }
 
@@ -364,8 +358,7 @@ function syncCardVisibilityUI() {
 		toggleHistoryCard: 'history',
 		toggleChartCard: 'chart',
 		toggleWaterCard: 'waterTracker',
-		toggleWaterChartCard: 'waterChart',
-		toggleLastResultCard: 'lastResult'
+		toggleWaterChartCard: 'waterChart'
 	};
 	Object.entries(map).forEach(([id, key]) => {
 		const el = document.getElementById(id);
@@ -385,8 +378,7 @@ function applyCardOrder() {
 		history: 'history-card',
 		chart: 'chart-section',
 		waterTracker: 'waterSection',
-		waterChart: 'waterChartSection',
-		lastResult: 'last-result-card'
+		waterChart: 'waterChartSection'
 	};
 
 	order.forEach((key) => {
@@ -608,7 +600,6 @@ function connectWebSocket(userId) {
 					console.log('📊 Новая запись получена в реал-тайме:', newEntry);
 					renderHistory();
 					drawChart();
-					updateLast(newEntry);
 				} else if (msg.updateType === 'entryDeleted') {
 					// Запись удалена другим устройством
 					const idx = history.findIndex(e => e.id === msg.data.id);
@@ -617,7 +608,6 @@ function connectWebSocket(userId) {
 						console.log('🗑️ Запись удалена в реал-тайме. ID:', msg.data.id);
 						renderHistory();
 						drawChart();
-						updateLast(history[history.length - 1]);
 					}
 				} else if (msg.updateType === 'waterAdded' || msg.updateType === 'waterDeleted') {
 					console.log('💧 Обновление воды в реал-тайме:', msg.updateType, msg.data);
@@ -724,8 +714,6 @@ const historyList = document.getElementById('history');
 const historyCount = document.getElementById('history-count');
 const currentResult = document.getElementById('current-result');
 const currentNote = document.getElementById('current-note');
-const lastResult = document.getElementById('last-result');
-const lastMeta = document.getElementById('last-meta');
 const chart = document.getElementById('chart');
 const ctx = chart.getContext('2d');
 const userSelect = document.getElementById('userSelect');
@@ -951,7 +939,6 @@ async function handleSignup() {
 		updateUserBadge();
 		renderHistory();
 		drawChart();
-		updateLast(history[history.length - 1]);
 		
 		// Загружаем воду если пользователь авторизован
 		await loadWaterSettings();
@@ -1056,7 +1043,6 @@ async function handleLogin() {
 		// Рендерим все элементы
 		renderHistory();
 		drawChart();
-		updateLast(history[history.length - 1]);
 		
 		// Загружаем настройки воды и логи
 		await loadWaterSettings();
@@ -1105,7 +1091,6 @@ async function handleLogout() {
 		updateUserBadge();
 		renderHistory();
 		drawChart();
-		updateLast();
 		applyCardVisibility();
 		syncCardVisibilityUI();
 	// Убираем сообщение через 0.5 секунды с плавным исчезновением
@@ -1170,7 +1155,6 @@ async function handleDeleteAccount() {
 		updateUserBadge();
 		renderHistory();
 		drawChart();
-		updateLast();
 		applyCardVisibility();
 		syncCardVisibilityUI();
 		
@@ -1543,86 +1527,115 @@ function renderWaterChart() {
 	const dpr = window.devicePixelRatio || 1;
 	const rect = canvas.getBoundingClientRect();
 	canvas.width = rect.width * dpr;
-	canvas.height = 300 * dpr;
+	canvas.height = 320 * dpr;
 	canvas.style.width = '100%';
-	canvas.style.height = '300px';
+	canvas.style.height = '320px';
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.scale(dpr, dpr);
-	
+
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	
+
+	const width = canvas.width / dpr;
+	const height = canvas.height / dpr;
+	const padding = 52;
+
+	// Фон
+	const bg = ctx.createLinearGradient(0, 0, 0, height);
+	bg.addColorStop(0, '#0f172a');
+	bg.addColorStop(1, '#0b1224');
+	ctx.fillStyle = bg;
+	ctx.fillRect(0, 0, width, height);
+
 	if (series.length === 0) {
 		ctx.fillStyle = '#9aa7bd';
-		ctx.font = '16px "SF Pro Display"';
+		ctx.font = '16px "Space Grotesk", system-ui';
 		ctx.fillText('Нет данных для отображения', 20, 40);
 		return;
 	}
-	
-	const padding = 40;
-	const width = canvas.width / dpr;
-	const height = canvas.height / dpr;
-	const maxAmount = Math.max(...series.map(point => point.amount), 1);
+
+	const maxAmount = Math.max(...series.map(p => p.amount), 1);
 	const totalAmount = series.reduce((s, p) => s + p.amount, 0);
 	const scaleY = (amount) => height - padding - (amount / maxAmount) * (height - padding * 2);
-	
-	// Отрисовка осей
-	ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+	const scaleX = (i) => padding + (i / Math.max(series.length - 1, 1)) * (width - padding * 2);
+
+	// Сетка
+	const ySteps = 5;
+	ctx.strokeStyle = 'rgba(255,255,255,0.04)';
 	ctx.lineWidth = 1;
-	ctx.beginPath();
-	ctx.moveTo(padding, padding);
-	ctx.lineTo(padding, height - padding);
-	ctx.lineTo(width - padding, height - padding);
-	ctx.stroke();
-	
-	// Отрисовка данных
-	// Текст с суммой за выбранный период
-	ctx.fillStyle = '#e9eefb';
-	ctx.font = '13px "SF Pro Display"';
-	ctx.fillText(`Всего за период: ${totalAmount} мл`, padding, padding - 12);
-
-	ctx.strokeStyle = 'rgba(10, 132, 255, 0.9)';
-	ctx.lineWidth = 2;
-	ctx.beginPath();
-	
-	series.forEach((point, index) => {
-		const x = padding + (index * (width - padding * 2) / Math.max(series.length - 1, 1));
-		const y = scaleY(point.amount);
-		
-		if (index === 0) {
-			ctx.moveTo(x, y);
-		} else {
-			ctx.lineTo(x, y);
-		}
-		
-		// Отрисовка точек
+	ctx.font = '11px "Space Grotesk", system-ui';
+	ctx.fillStyle = '#a5b4fc';
+	for (let i = 0; i <= ySteps; i++) {
+		const yVal = (i / ySteps) * maxAmount;
+		const y = scaleY(yVal);
 		ctx.beginPath();
-		ctx.arc(x, y, 5, 0, Math.PI * 2);
-		ctx.fillStyle = 'rgba(10, 132, 255, 0.9)';
-		ctx.fill();
-	});
-	
-	ctx.stroke();
-	
-	// Отрисовка меток
-	ctx.fillStyle = '#9aa7bd';
-	ctx.font = '12px "SF Pro Display"';
+		ctx.moveTo(padding, y);
+		ctx.lineTo(width - padding, y);
+		ctx.stroke();
+		ctx.fillText(Math.round(yVal) + ' мл', 12, y + 4);
+	}
 
-	waterChartData.forEach((log, index) => {
-		const x = padding + (index * (width - padding * 2) / (waterChartData.length - 1));
+	// Подпись суммы за период
+	ctx.fillStyle = '#e2e8f0';
+	ctx.font = '13px "Space Grotesk", system-ui';
+	ctx.fillText(`Всего за период: ${totalAmount} мл`, padding, padding - 14);
+
+	// Линия и заливка
+	const accent = '#34d399';
+	const area = ctx.createLinearGradient(0, padding, 0, height - padding);
+	area.addColorStop(0, 'rgba(52, 211, 153, 0.35)');
+	area.addColorStop(1, 'rgba(52, 211, 153, 0.05)');
+
+	ctx.beginPath();
+	series.forEach((point, index) => {
+		const x = scaleX(index);
 		const y = scaleY(point.amount);
-		const label = point.label;
-		// подпись по оси X
-		ctx.fillStyle = '#9aa7bd';
-		ctx.font = '12px "SF Pro Display"';
-		ctx.fillText(label, x - 24, height - padding + 20);
+		if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+	});
+	ctx.save();
+	ctx.shadowColor = 'rgba(52, 211, 153, 0.35)';
+	ctx.shadowBlur = 12;
+	ctx.strokeStyle = accent;
+	ctx.lineWidth = 3;
+	ctx.lineJoin = 'round';
+	ctx.lineCap = 'round';
+	ctx.stroke();
+	ctx.restore();
 
-		// подпись над точкой с лучшей читаемостью
-		ctx.font = '12px "SF Pro Display"';
-		ctx.fillStyle = '#e9eefb';
+	ctx.lineTo(scaleX(series.length - 1), height - padding);
+	ctx.lineTo(scaleX(0), height - padding);
+	ctx.closePath();
+	ctx.fillStyle = area;
+	ctx.fill();
+
+	// Точки и подписи
+	series.forEach((point, index) => {
+		const x = scaleX(index);
+		const y = scaleY(point.amount);
+		ctx.beginPath();
+		ctx.fillStyle = '#22c55e';
+		ctx.strokeStyle = '#ecfeff';
+		ctx.lineWidth = 2;
+		ctx.arc(x, y, 6.5, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+
+		// подпись над точкой
+		ctx.font = '12px "Space Grotesk", system-ui';
+		ctx.fillStyle = '#e2e8f0';
 		ctx.strokeStyle = 'rgba(0,0,0,0.35)';
 		ctx.lineWidth = 3;
 		ctx.strokeText(`${point.amount} мл`, x - 18, y - 10);
 		ctx.fillText(`${point.amount} мл`, x - 18, y - 10);
 	});
+
+	// Подписи оси X
+	ctx.fillStyle = '#cbd5e1';
+	ctx.font = '11px "Space Grotesk", system-ui';
+	const step = Math.max(1, Math.floor(series.length / 6));
+	for (let i = 0; i < series.length; i += step) {
+		const x = scaleX(i);
+		ctx.fillText(series[i].label, x - 22, height - padding + 18);
+	}
 }
 
 function openWaterSettingsModal() {
@@ -1801,7 +1814,6 @@ async function deleteEntry(id) {
 		}
 		renderHistory();
 		drawChart();
-		updateLast(history[history.length - 1]);
 	} catch (err) {
 		console.error('Ошибка удаления:', err);
 	}
@@ -1874,17 +1886,6 @@ function plural(n, forms) {
 	return forms[2];
 }
 
-function updateLast(entry) {
-	if (!entry) {
-		lastResult.textContent = '—';
-		lastMeta.textContent = 'Нет данных';
-		return;
-	}
-	const dateStr = formatLocalDateTime(entry.timestamp, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-	lastResult.textContent = entry.bf + ' %';
-	lastMeta.textContent = `${entry.sex === 'male' ? 'Муж' : 'Жен'}, ${entry.group || ''} • ${dateStr}`;
-}
-
 async function clearHistory() {
 	if (!authenticated || !currentUser) {
 		currentNote.textContent = 'Войди сначала, чтобы очистить историю';
@@ -1900,7 +1901,6 @@ async function clearHistory() {
 		history = [];
 		renderHistory();
 		drawChart();
-		updateLast();
 		currentResult.textContent = '—';
 		currentNote.textContent = 'История очищена';
 	} catch (err) {
@@ -1931,7 +1931,11 @@ function drawChart() {
 	const entries = ordered.slice(Math.max(0, ordered.length - maxPoints));
 	ctx.clearRect(0, 0, viewW, viewH);
 
-	ctx.fillStyle = '#0b0e16';
+	// Фон с мягким градиентом
+	const bg = ctx.createLinearGradient(0, 0, 0, viewH);
+	bg.addColorStop(0, '#0f172a');
+	bg.addColorStop(1, '#0b1224');
+	ctx.fillStyle = bg;
 	ctx.fillRect(0, 0, viewW, viewH);
 
 	if (!authenticated || !currentUser) {
@@ -2026,85 +2030,95 @@ function drawChart() {
 		grad.addColorStop(1, 'rgba(10,132,255,0.12)');
 		ctx.fillStyle = grad;
 		ctx.beginPath();
-		ctx.arc(x, y, 8, 0, Math.PI * 2);
+		const padding = 52;
 		ctx.fill();
 	});
 
 	ctx.fillStyle = '#8f9bb2';
 	ctx.font = '11px "SF Pro Display"';
 	for (let i = 0; i < entries.length; i += xStepShow) {
-		const x = scaleX(i);
-		const label = formatLocalDateTime(entries[i].timestamp, { month: 'short', day: 'numeric' });
-		ctx.fillText(label, x - 18, viewH - padding + 18);
-	}
 
-	ctx.fillStyle = '#9aa7bd';
-	ctx.font = '12px "SF Pro Display"';
-	const last = entries[entries.length - 1];
-	ctx.fillText('Последнее: ' + last.bf + ' %', scaleX(entries.length - 1) - 30, scaleY(last.bf) - 14);
-}
+		// Сетка
+		const ySteps = 5;
+		ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+		ctx.lineWidth = 1;
+		ctx.font = '11px "Space Grotesk", "SF Pro Display", system-ui';
+		ctx.fillStyle = '#a5b4fc';
+		for (let i = 0; i <= ySteps; i++) {
+			const yVal = minY + (i / ySteps) * (maxY - minY);
+			const y = scaleY(yVal);
+			ctx.beginPath();
+			ctx.moveTo(padding, y);
+			ctx.lineTo(viewW - padding, y);
+			ctx.stroke();
+			ctx.fillText(yVal.toFixed(0) + ' %', 12, y + 4);
+		}
 
-// ===== СМЕНА ПАРОЛЯ =====
-async function handleChangePassword() {
-	const currentPassword = document.getElementById('currentPassword').value.trim();
-	const newPassword = document.getElementById('newPassword').value.trim();
-	const confirmPassword = document.getElementById('confirmPassword').value.trim();
-	const statusEl = document.getElementById('passwordChangeStatus');
-	
-	console.log('🔐 handleChangePassword - currentPassword длина:', currentPassword.length, 'newPassword длина:', newPassword.length);
-	
-	if (!currentPassword || !newPassword || !confirmPassword) {
-		statusEl.textContent = '❌ Заполни все поля';
-		statusEl.style.color = '#ef4444';
-		return;
-	}
-	
-	if (newPassword.length < 4) {
-		statusEl.textContent = '❌ Пароль должен быть не менее 4 символов';
-		statusEl.style.color = '#ef4444';
-		return;
-	}
-	
-	if (newPassword !== confirmPassword) {
-		statusEl.textContent = '❌ Пароли не совпадают';
-		statusEl.style.color = '#ef4444';
-		return;
-	}
-	
-	try {
-		console.log('🔐 Отправляю запрос на изменение пароля...');
-		await apiCall('/api/change-password', {
-			method: 'POST',
-			body: JSON.stringify({ currentPassword, newPassword })
+		const xStepShow = Math.max(1, Math.floor(count / 6));
+		ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+		for (let i = 0; i < count; i += xStepShow) {
+			const x = scaleX(i);
+			ctx.beginPath();
+			ctx.moveTo(x, padding);
+			ctx.lineTo(x, viewH - padding + 8);
+			ctx.stroke();
+		}
+
+		// Линия и заливка
+		const accent = '#5ad7ff';
+		const area = ctx.createLinearGradient(0, padding, 0, viewH - padding);
+		area.addColorStop(0, 'rgba(90, 215, 255, 0.35)');
+		area.addColorStop(1, 'rgba(90, 215, 255, 0.05)');
+
+		ctx.beginPath();
+		entries.forEach((e, i) => {
+			const x = scaleX(i);
+			const y = scaleY(e.bf);
+			if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
 		});
-		
-		statusEl.textContent = '✓ Пароль успешно изменён!';
-		statusEl.style.color = '#86efac';
-		
-		setTimeout(() => {
-			document.getElementById('currentPassword').value = '';
-			document.getElementById('newPassword').value = '';
-			document.getElementById('confirmPassword').value = '';
-			toggleChangePasswordForm();
-		}, 1500);
-	} catch (err) {
-		console.error('🔐 Ошибка смены пароля:', err);
-		statusEl.textContent = '❌ ' + err.message;
-		statusEl.style.color = '#ef4444';
-	}
-}
+		ctx.save();
+		ctx.shadowColor = 'rgba(90, 215, 255, 0.4)';
+		ctx.shadowBlur = 14;
+		ctx.strokeStyle = accent;
+		ctx.lineWidth = 3;
+		ctx.lineJoin = 'round';
+		ctx.lineCap = 'round';
+		ctx.stroke();
+		ctx.restore();
 
-function toggleChangePasswordForm() {
-	const changeForm = document.getElementById('changePasswordForm');
-	const accountInfo = document.getElementById('accountInfo');
-	const accountActions = document.getElementById('accountActions');
-	
-	if (changeForm.style.display === 'none') {
-		changeForm.style.display = 'block';
-		accountInfo.style.display = 'none';
-		accountActions.style.display = 'none';
-	} else {
-		changeForm.style.display = 'none';
+		ctx.lineTo(scaleX(entries.length - 1), viewH - padding);
+		ctx.lineTo(scaleX(0), viewH - padding);
+		ctx.closePath();
+		ctx.fillStyle = area;
+		ctx.fill();
+
+		// Точки
+		entries.forEach((e, i) => {
+			const x = scaleX(i);
+			const y = scaleY(e.bf);
+			ctx.beginPath();
+			ctx.fillStyle = '#0ea5e9';
+			ctx.strokeStyle = '#e0f2fe';
+			ctx.lineWidth = 2;
+			ctx.arc(x, y, 7, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.stroke();
+		});
+
+		// Подписи по оси X
+		ctx.fillStyle = '#cbd5e1';
+		ctx.font = '11px "Space Grotesk", "SF Pro Display", system-ui';
+		for (let i = 0; i < entries.length; i += xStepShow) {
+			const x = scaleX(i);
+			const label = formatLocalDateTime(entries[i].timestamp, { month: 'short', day: 'numeric' });
+			ctx.fillText(label, x - 18, viewH - padding + 18);
+		}
+
+		// Последняя точка
+		ctx.fillStyle = '#e2e8f0';
+		ctx.font = '12px "Space Grotesk", "SF Pro Display", system-ui';
+		const last = entries[entries.length - 1];
+		ctx.fillText('Последнее: ' + last.bf + ' %', scaleX(entries.length - 1) - 36, scaleY(last.bf) - 14);
 		accountInfo.style.display = 'block';
 		accountActions.style.display = 'block';
 	}
@@ -2134,8 +2148,7 @@ const cardToggleMap = {
 	toggleHistoryCard: 'history',
 	toggleChartCard: 'chart',
 	toggleWaterCard: 'waterTracker',
-	toggleWaterChartCard: 'waterChart',
-	toggleLastResultCard: 'lastResult'
+	toggleWaterChartCard: 'waterChart'
 };
 
 Object.entries(cardToggleMap).forEach(([id, key]) => {
@@ -2263,9 +2276,6 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 		
 		drawChart();
 		console.log('✓ drawChart завершен');
-		
-		updateLast(authenticated ? history[history.length - 1] : null);
-		console.log('✓ updateLast завершен');
 		
 		// Загружаем воду если пользователь авторизован
 		if (authenticated) {

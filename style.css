@@ -2,7 +2,7 @@
 	--bg-dark: #0f1419;
 	--bg-light: #1a1f2e;
 	--bg-accent: #252d3d;
-	--panel: rgba(26, 31, 46, 0.7);
+	background: #0b1224;
 	--panel-light: rgba(37, 45, 61, 0.5);
 	--accent: #6366f1;
 	--accent-2: #8b5cf6;
@@ -10,7 +10,7 @@
 	--success: #10b981;
 	--text-dark: #f8f9fb;
 	--text-light: #cbd5e1;
-	--text-muted: #94a3b8;
+	background: #0b1224;
 	--danger: #ef4444;
 	--shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 	--shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -200,6 +200,11 @@ header {
 .cards-grid.grid-layout .card {
 	display: flex;
 	flex-direction: column;
+}
+
+.cards-grid.grid-layout #chart-section,
+.cards-grid.grid-layout #waterChartSection {
+	grid-column: 1 / -1;
 }
 
 .card {
