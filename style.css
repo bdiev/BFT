@@ -94,7 +94,7 @@ header {
 .header-bar {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: auto;
 	margin-bottom: 16px;
 	flex-wrap: nowrap;
 	width: 100%;
@@ -112,7 +112,6 @@ header {
 	align-items: center;
 	gap: 8px;
 	flex-shrink: 0;
-	margin-left: auto;
 }
 
 @media (max-width: 768px) {
