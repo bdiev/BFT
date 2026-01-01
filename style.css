@@ -55,7 +55,8 @@ body::before {
 	display: grid;
 	gap: 28px;
 	flex: 1;
-	padding-bottom: 40px;
+	padding-bottom: 20px;
+	width: 100%;
 }
 
 header {
@@ -1246,7 +1247,7 @@ select {
 	margin-left: -20px;
 	margin-right: -20px;
 	width: calc(100% + 40px);
-	padding: 20px;
+	padding: 12px 20px;
 	background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
 	border-top: 1px solid rgba(99, 102, 241, 0.15);
 	backdrop-filter: blur(20px);
@@ -1258,34 +1259,34 @@ select {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 12px;
+	gap: 8px;
 }
 
 .footer-text {
 	margin: 0;
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: 13px;
 	font-weight: 500;
 }
 
 .footer-links {
 	display: flex;
-	gap: 16px;
+	gap: 12px;
 	align-items: center;
 }
 
 .footer-link {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 16px;
-	border-radius: 12px;
+	gap: 6px;
+	padding: 6px 12px;
+	border-radius: 10px;
 	background: rgba(99, 102, 241, 0.1);
 	border: 1px solid rgba(99, 102, 241, 0.2);
 	color: #a5b4fc;
 	text-decoration: none;
 	font-weight: 600;
-	font-size: 14px;
+	font-size: 13px;
 	transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
 }
 
