@@ -1140,6 +1140,7 @@ function renderWaterChart() {
 	const width = canvas.width / dpr;
 	const height = canvas.height / dpr;
 	const maxAmount = Math.max(...series.map(point => point.amount), 1);
+	const totalAmount = series.reduce((s, p) => s + p.amount, 0);
 	const scaleY = (amount) => height - padding - (amount / maxAmount) * (height - padding * 2);
 	
 	// Отрисовка осей
@@ -1152,6 +1153,11 @@ function renderWaterChart() {
 	ctx.stroke();
 	
 	// Отрисовка данных
+	// Текст с суммой за выбранный период
+	ctx.fillStyle = '#e9eefb';
+	ctx.font = '13px "SF Pro Display"';
+	ctx.fillText(`Всего за период: ${totalAmount} мл`, padding, padding - 12);
+
 	ctx.strokeStyle = 'rgba(10, 132, 255, 0.9)';
 	ctx.lineWidth = 2;
 	ctx.beginPath();
@@ -1183,8 +1189,18 @@ function renderWaterChart() {
 		const x = padding + (index * (width - padding * 2) / (waterChartData.length - 1));
 		const y = scaleY(point.amount);
 		const label = point.label;
-		ctx.fillText(label, x - 20, height - padding + 20);
-		ctx.fillText(`${point.amount} мл`, x - 15, y - 10);
+		// подпись по оси X
+		ctx.fillStyle = '#9aa7bd';
+		ctx.font = '12px "SF Pro Display"';
+		ctx.fillText(label, x - 24, height - padding + 20);
+
+		// подпись над точкой с лучшей читаемостью
+		ctx.font = '12px "SF Pro Display"';
+		ctx.fillStyle = '#e9eefb';
+		ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+		ctx.lineWidth = 3;
+		ctx.strokeText(`${point.amount} мл`, x - 18, y - 10);
+		ctx.fillText(`${point.amount} мл`, x - 18, y - 10);
 	});
 }
 
