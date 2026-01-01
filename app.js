@@ -1044,35 +1044,25 @@ function renderWaterLogs() {
 	
 	container.innerHTML = '';
 
-	// Для day показываем сырые записи; для других периодов — агрегированно по дням/месяцам с нулями
-	if (currentWaterPeriod === 'day') {
-		const series = buildWaterSeries('day', waterLogs, waterSettings.reset_time);
-		series.forEach(item => {
-			const logEl = document.createElement('div');
-			logEl.className = 'water-log-item';
-			logEl.innerHTML = `
-				<div>
-					<strong>${item.amount}мл</strong> ${item.raw?.drink_type || ''}
-					<div style="font-size: 11px; color: var(--text-muted);">${item.label}</div>
-				</div>
-				<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
-			`;
-			logEl.querySelector('button').addEventListener('click', () => deleteWaterLog(item.raw?.id));
-			container.appendChild(logEl);
-		});
-		return;
-	}
+	const boundary = getLastWaterResetBoundary(waterSettings.reset_time);
 
-	const series = buildWaterSeries(currentWaterPeriod, waterLogs, waterSettings.reset_time);
-	series.forEach(item => {
+	// Сортируем от новых к старым (учитываем нормализацию таймзоны) и фильтруем по границе дня
+	const sorted = [...waterLogs]
+		.sort((a, b) => normalizeTimestamp(b.logged_at) - normalizeTimestamp(a.logged_at))
+		.filter(log => normalizeTimestamp(log.logged_at) >= boundary);
+
+	sorted.forEach(log => {
+		const time = formatLocalDateTime(normalizeTimestamp(log.logged_at), { hour: '2-digit', minute: '2-digit' });
 		const logEl = document.createElement('div');
 		logEl.className = 'water-log-item';
 		logEl.innerHTML = `
 			<div>
-				<strong>${item.amount}мл</strong>
-				<div style="font-size: 11px; color: var(--text-muted);">${item.label}</div>
+				<strong>${log.amount}мл</strong> ${log.drink_type}
+				<div style="font-size: 11px; color: var(--text-muted);">${time}</div>
 			</div>
+			<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
 		`;
+		logEl.querySelector('button').addEventListener('click', () => deleteWaterLog(log.id));
 		container.appendChild(logEl);
 	});
 }
@@ -1730,7 +1720,6 @@ document.getElementById('waterSettingsModal')?.addEventListener('click', (e) => 
 document.getElementById('waterPeriodDay')?.addEventListener('click', () => {
 	currentWaterPeriod = 'day';
 	loadWaterChartData('day');
-	renderWaterLogs();
 	document.getElementById('waterPeriodDay').classList.add('active');
 	document.getElementById('waterPeriodWeek').classList.remove('active');
 	document.getElementById('waterPeriodMonth').classList.remove('active');
@@ -1740,7 +1729,6 @@ document.getElementById('waterPeriodDay')?.addEventListener('click', () => {
 document.getElementById('waterPeriodWeek')?.addEventListener('click', () => {
 	currentWaterPeriod = 'week';
 	loadWaterChartData('week');
-	renderWaterLogs();
 	document.getElementById('waterPeriodDay').classList.remove('active');
 	document.getElementById('waterPeriodWeek').classList.add('active');
 	document.getElementById('waterPeriodMonth').classList.remove('active');
@@ -1750,7 +1738,6 @@ document.getElementById('waterPeriodWeek')?.addEventListener('click', () => {
 document.getElementById('waterPeriodMonth')?.addEventListener('click', () => {
 	currentWaterPeriod = 'month';
 	loadWaterChartData('month');
-	renderWaterLogs();
 	document.getElementById('waterPeriodDay').classList.remove('active');
 	document.getElementById('waterPeriodWeek').classList.remove('active');
 	document.getElementById('waterPeriodMonth').classList.add('active');
@@ -1760,7 +1747,6 @@ document.getElementById('waterPeriodMonth')?.addEventListener('click', () => {
 document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 	currentWaterPeriod = 'year';
 	loadWaterChartData('year');
-	renderWaterLogs();
 	document.getElementById('waterPeriodDay').classList.remove('active');
 	document.getElementById('waterPeriodWeek').classList.remove('active');
 	document.getElementById('waterPeriodMonth').classList.remove('active');
