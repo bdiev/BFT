@@ -94,7 +94,6 @@ header {
 
 .header-bar {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
 	gap: 16px;
 	margin-bottom: 16px;
@@ -107,7 +106,6 @@ header {
 	align-items: center;
 	gap: 12px;
 	flex-shrink: 1;
-	min-width: 0;
 }
 
 .header-bar__right {
