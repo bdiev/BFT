@@ -67,11 +67,31 @@ db.serialize(() => {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE,
       password_hash TEXT NOT NULL,
+      is_admin INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
     if (err) console.error('Ошибка создания таблицы users:', err);
-    else console.log('✓ Таблица users готова');
+    else {
+      console.log('✓ Таблица users готова');
+      
+      // Проверяем, существует ли поле is_admin (для миграции существующих БД)
+      db.all("PRAGMA table_info(users)", (err, columns) => {
+        if (err) {
+          console.error('Ошибка проверки структуры таблицы users:', err);
+          return;
+        }
+        
+        const hasIsAdmin = columns.some(col => col.name === 'is_admin');
+        if (!hasIsAdmin) {
+          console.log('Миграция: добавляем поле is_admin...');
+          db.run("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0", (err) => {
+            if (err) console.error('Ошибка миграции:', err);
+            else console.log('✓ Поле is_admin добавлено');
+          });
+        }
+      });
+    }
   });
   
   db.run(`
@@ -207,7 +227,7 @@ app.post('/api/signup', async (req, res) => {
         
         res.json({
           message: 'Аккаунт создан!',
-          user: { id: this.lastID, username }
+          user: { id: this.lastID, username, isAdmin: false }
         });
       }
     );
@@ -226,7 +246,7 @@ app.post('/api/login', (req, res) => {
   }
   
   db.get(
-    'SELECT id, username, password_hash FROM users WHERE username = ?',
+    'SELECT id, username, password_hash, is_admin FROM users WHERE username = ?',
     [username],
     async (err, user) => {
       if (err || !user) {
@@ -249,7 +269,7 @@ app.post('/api/login', (req, res) => {
       
       res.json({
         message: 'Вошли успешно!',
-        user: { id: user.id, username: user.username }
+        user: { id: user.id, username: user.username, isAdmin: !!user.is_admin }
       });
     }
   );
@@ -291,7 +311,10 @@ app.post('/api/delete-account', authenticateToken, (req, res) => {
 
 // Получить текущего пользователя
 app.get('/api/me', authenticateToken, (req, res) => {
-  res.json({ id: req.userId, username: req.username });
+  db.get('SELECT is_admin FROM users WHERE id = ?', [req.userId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    res.json({ id: req.userId, username: req.username, isAdmin: row ? !!row.is_admin : false });
+  });
 });
 
 const DEFAULT_CARD_VISIBILITY = {
@@ -587,6 +610,203 @@ app.delete('/api/water-logs/:id', authenticateToken, (req, res) => {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// ===== АДМИН ПАНЕЛЬ API =====
+
+// Middleware проверки прав администратора
+function requireAdmin(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: 'Требуется вход' });
+  
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Невалидный токен' });
+    
+    db.get('SELECT is_admin FROM users WHERE id = ?', [user.id], (err, row) => {
+      if (err || !row) return res.status(500).json({ error: 'Ошибка проверки прав' });
+      if (!row.is_admin) return res.status(403).json({ error: 'Требуются права администратора' });
+      
+      req.userId = user.id;
+      req.username = user.username;
+      next();
+    });
+  });
+}
+
+// Получить список всех пользователей (только для админов)
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  const query = `
+    SELECT 
+      u.id,
+      u.username,
+      u.email,
+      u.is_admin,
+      u.created_at,
+      COUNT(DISTINCT e.id) as entries_count,
+      COUNT(DISTINCT w.id) as water_logs_count
+    FROM users u
+    LEFT JOIN entries e ON u.id = e.user_id
+    LEFT JOIN water_logs w ON u.id = w.user_id
+    GROUP BY u.id
+    ORDER BY u.created_at DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Ошибка получения пользователей:', err);
+      return res.status(500).json({ error: 'Ошибка БД' });
+    }
+    res.json(rows || []);
+  });
+});
+
+// Получить детальную информацию о пользователе (только для админов)
+app.get('/api/admin/users/:id', requireAdmin, (req, res) => {
+  const userId = req.params.id;
+  
+  db.get(
+    'SELECT id, username, email, is_admin, created_at FROM users WHERE id = ?',
+    [userId],
+    (err, user) => {
+      if (err) return res.status(500).json({ error: 'Ошибка БД' });
+      if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+      
+      // Получаем статистику
+      db.get(
+        `SELECT 
+          COUNT(DISTINCT e.id) as entries_count,
+          COUNT(DISTINCT w.id) as water_logs_count,
+          MAX(e.timestamp) as last_entry,
+          MAX(w.logged_at) as last_water_log
+        FROM users u
+        LEFT JOIN entries e ON u.id = e.user_id
+        LEFT JOIN water_logs w ON u.id = w.user_id
+        WHERE u.id = ?`,
+        [userId],
+        (err, stats) => {
+          if (err) return res.status(500).json({ error: 'Ошибка БД' });
+          res.json({ ...user, ...stats });
+        }
+      );
+    }
+  );
+});
+
+// Переключить статус администратора (только для админов)
+app.post('/api/admin/users/:id/toggle-admin', requireAdmin, (req, res) => {
+  const userId = parseInt(req.params.id);
+  
+  // Проверяем, не пытается ли админ отозвать права у самого себя
+  if (userId === req.userId) {
+    return res.status(400).json({ error: 'Нельзя изменить собственные права администратора' });
+  }
+  
+  db.get('SELECT is_admin FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    
+    const newStatus = user.is_admin ? 0 : 1;
+    
+    db.run('UPDATE users SET is_admin = ? WHERE id = ?', [newStatus, userId], (err) => {
+      if (err) return res.status(500).json({ error: 'Ошибка обновления' });
+      res.json({ message: 'Статус обновлен', is_admin: newStatus });
+    });
+  });
+});
+
+// Удалить пользователя (только для админов)
+app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
+  const userId = parseInt(req.params.id);
+  
+  // Проверяем, не пытается ли админ удалить самого себя
+  if (userId === req.userId) {
+    return res.status(400).json({ error: 'Нельзя удалить собственный аккаунт через админ-панель' });
+  }
+  
+  db.serialize(() => {
+    db.run('DELETE FROM entries WHERE user_id = ?', [userId]);
+    db.run('DELETE FROM water_settings WHERE user_id = ?', [userId]);
+    db.run('DELETE FROM user_settings WHERE user_id = ?', [userId]);
+    db.run('DELETE FROM water_logs WHERE user_id = ?', [userId]);
+    db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+      if (err) return res.status(500).json({ error: 'Ошибка удаления' });
+      if (this.changes === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+      res.json({ message: 'Пользователь удален' });
+    });
+  });
+});
+
+// Сбросить пароль пользователя (только для админов)
+app.post('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
+  const userId = parseInt(req.params.id);
+  const { newPassword } = req.body;
+  
+  if (!newPassword || newPassword.length < 4) {
+    return res.status(400).json({ error: 'Пароль должен быть не менее 4 символов' });
+  }
+  
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    db.run('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, userId], function(err) {
+      if (err) return res.status(500).json({ error: 'Ошибка обновления' });
+      if (this.changes === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+      res.json({ message: 'Пароль сброшен' });
+    });
+  } catch (err) {
+    console.error('Ошибка сброса пароля:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Получить активность пользователей (статистика для админов)
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  const queries = {
+    totalUsers: 'SELECT COUNT(*) as count FROM users',
+    totalEntries: 'SELECT COUNT(*) as count FROM entries',
+    totalWaterLogs: 'SELECT COUNT(*) as count FROM water_logs',
+    adminCount: 'SELECT COUNT(*) as count FROM users WHERE is_admin = 1',
+    recentUsers: `SELECT id, username, created_at FROM users ORDER BY created_at DESC LIMIT 5`,
+  };
+  
+  const stats = {};
+  
+  db.get(queries.totalUsers, (err, row) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    stats.totalUsers = row.count;
+    
+    db.get(queries.totalEntries, (err, row) => {
+      if (err) return res.status(500).json({ error: 'Ошибка БД' });
+      stats.totalEntries = row.count;
+      
+      db.get(queries.totalWaterLogs, (err, row) => {
+        if (err) return res.status(500).json({ error: 'Ошибка БД' });
+        stats.totalWaterLogs = row.count;
+        
+        db.get(queries.adminCount, (err, row) => {
+          if (err) return res.status(500).json({ error: 'Ошибка БД' });
+          stats.adminCount = row.count;
+          
+          db.all(queries.recentUsers, (err, rows) => {
+            if (err) return res.status(500).json({ error: 'Ошибка БД' });
+            stats.recentUsers = rows || [];
+            res.json(stats);
+          });
+        });
+      });
+    });
+  });
+});
+
+// Проверить, является ли текущий пользователь админом
+app.get('/api/admin/check', authenticateToken, (req, res) => {
+  db.get('SELECT is_admin FROM users WHERE id = ?', [req.userId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    res.json({ isAdmin: row ? !!row.is_admin : false });
+  });
+});
+
+// ===== КОНЕЦ АДМИН ПАНЕЛЬ API =====
+
 
 // ===== WebSocket для реал-тайма =====
 // Хранилище активных подключений: { userId: Set<WebSocket> }

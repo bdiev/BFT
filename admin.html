@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+	<meta name="color-scheme" content="dark" />
+	<meta name="theme-color" content="#0f1116" />
+	<title>Админ-панель - Sport Notepad</title>
+	<link rel="icon" type="image/png" href="./icons/tabicon.png" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="./admin-style.css" />
+</head>
+<body>
+	<div class="admin-container">
+		<!-- Хедер -->
+		<header class="admin-header">
+			<div class="header-content">
+				<div class="header-left">
+					<h1>⚙️ Админ-панель</h1>
+					<span class="admin-badge">Администратор</span>
+				</div>
+				<div class="header-right">
+					<span id="currentAdminName" class="current-user"></span>
+					<a href="/" class="btn-back">← На главную</a>
+					<button id="logoutBtn" class="btn-logout">Выйти</button>
+				</div>
+			</div>
+		</header>
+
+		<!-- Статистика -->
+		<section class="stats-section">
+			<div class="stat-card">
+				<div class="stat-icon">👥</div>
+				<div class="stat-content">
+					<div class="stat-label">Всего пользователей</div>
+					<div class="stat-value" id="totalUsers">0</div>
+				</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon">🔐</div>
+				<div class="stat-content">
+					<div class="stat-label">Администраторов</div>
+					<div class="stat-value" id="adminCount">0</div>
+				</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon">📊</div>
+				<div class="stat-content">
+					<div class="stat-label">Всего записей</div>
+					<div class="stat-value" id="totalEntries">0</div>
+				</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon">💧</div>
+				<div class="stat-content">
+					<div class="stat-label">Логов воды</div>
+					<div class="stat-value" id="totalWaterLogs">0</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Таблица пользователей -->
+		<section class="users-section">
+			<div class="section-header">
+				<h2>Пользователи</h2>
+				<input type="text" id="searchUsers" class="search-input" placeholder="🔍 Поиск пользователей...">
+			</div>
+			
+			<div class="table-container">
+				<table class="users-table">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Логин</th>
+							<th>Email</th>
+							<th>Регистрация</th>
+							<th>Записей</th>
+							<th>Логов воды</th>
+							<th>Роль</th>
+							<th>Действия</th>
+						</tr>
+					</thead>
+					<tbody id="usersTableBody">
+						<!-- Заполняется JS -->
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<!-- Недавние пользователи -->
+		<section class="recent-users-section">
+			<h3>Недавние регистрации</h3>
+			<div id="recentUsersList" class="recent-users-list">
+				<!-- Заполняется JS -->
+			</div>
+		</section>
+	</div>
+
+	<!-- Модальное окно для деталей пользователя -->
+	<div class="modal-overlay" id="userDetailsModal" style="display: none;">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Информация о пользователе</h2>
+				<button class="modal-close" id="closeUserDetailsModal">✕</button>
+			</div>
+			<div class="modal-body" id="userDetailsContent">
+				<!-- Заполняется JS -->
+			</div>
+		</div>
+	</div>
+
+	<!-- Модальное окно для сброса пароля -->
+	<div class="modal-overlay" id="resetPasswordModal" style="display: none;">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Сброс пароля</h2>
+				<button class="modal-close" id="closeResetPasswordModal">✕</button>
+			</div>
+			<div class="modal-body">
+				<p>Сброс пароля для пользователя: <strong id="resetPasswordUsername"></strong></p>
+				<div style="margin-top: 16px;">
+					<label for="newPasswordInput" class="label">Новый пароль</label>
+					<input type="password" id="newPasswordInput" placeholder="Минимум 4 символа" />
+				</div>
+				<div style="margin-top: 20px; display: flex; gap: 12px;">
+					<button id="confirmResetPasswordBtn" class="btn-primary">Сбросить пароль</button>
+					<button id="cancelResetPasswordBtn" class="btn-secondary">Отмена</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="./admin.js"></script>
+</body>
+</html>

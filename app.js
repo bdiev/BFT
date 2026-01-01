@@ -678,6 +678,13 @@ async function loadUserData() {
 		currentUser = user.username;
 		userId = user.id;
 		authenticated = true;
+		
+		// Проверяем права администратора и показываем/скрываем кнопку админ-панели
+		const adminPanelBtn = document.getElementById('adminPanelBtn');
+		if (adminPanelBtn) {
+			adminPanelBtn.style.display = user.isAdmin ? 'block' : 'none';
+		}
+		
 		const entries = await apiCall('/api/history');
 		console.log('✓ Загруженные данные с сервера:', entries);
 		history = entries.map(e => ({
@@ -2320,6 +2327,9 @@ document.getElementById('toggleChangePassword')?.addEventListener('click', toggl
 document.getElementById('saveNewPassword')?.addEventListener('click', handleChangePassword);
 document.getElementById('cancelChangePassword')?.addEventListener('click', toggleChangePasswordForm);
 document.getElementById('deleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
+document.getElementById('adminPanelBtn')?.addEventListener('click', () => {
+	window.location.href = '/admin.html';
+});
 document.getElementById('landingLoginBtn')?.addEventListener('click', openModal);
 
 const cardToggleMap = {
