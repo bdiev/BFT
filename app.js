@@ -726,7 +726,10 @@ function showEntryDetail(entry) {
 		}
 
 		detailPanel.innerHTML = `
-			<div class="meta">${date}</div>
+			<div style="display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap: wrap;">
+				<div class="meta">${date}</div>
+				<button type="button" class="ghost" style="padding:8px 12px; font-size:12px; line-height:1;" onclick="closeEntryModal()">Скрыть</button>
+			</div>
 			<div class="headline">
 				<div class="value" style="color:${assessment.color};">${entry.bf.toFixed(1)}%</div>
 				<div>
