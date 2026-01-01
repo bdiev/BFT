@@ -131,16 +131,39 @@ async function loadUserData() {
 		return true;
 	} catch (err) {
 		console.error('✗ Ошибка loadUserData:', err);
-		// Не обнуляем данные при временных проблемах сети/API, просто выводим предупреждение
-		const warnEl = document.getElementById('authStatus');
-		if (warnEl) {
-			warnEl.textContent = '⚠️ Не удалось обновить данные. Повтори позже.';
-			warnEl.classList.add('status-warn');
+		// Пробуем еще раз через 500ms
+		await new Promise(resolve => setTimeout(resolve, 500));
+		try {
+			const user = await apiCall('/api/me');
+			currentUser = user.username;
+			userId = user.id;
+			authenticated = true;
+			const entries = await apiCall('/api/history');
+			history = entries.map(e => ({
+				id: e.id,
+				sex: e.sex,
+				height: e.height,
+				neck: e.neck,
+				waist: e.waist,
+				hip: e.hip,
+				bf: e.bf,
+				group: e.group,
+				timestamp: new Date(e.timestamp).getTime()
+			}));
+			connectWebSocket(userId);
+			return true;
+		} catch (retryErr) {
+			console.error('✗ Ошибка повторной попытки loadUserData:', retryErr);
+			const warnEl = document.getElementById('authStatus');
+			if (warnEl) {
+				warnEl.textContent = '⚠️ Не удалось обновить данные. Повтори позже.';
+				warnEl.classList.add('status-warn');
+			}
+			authenticated = false;
+			currentUser = null;
+			userId = null;
+			return false;
 		}
-		authenticated = false;
-		currentUser = null;
-		userId = null;
-		return false;
 	}
 }
 
@@ -312,7 +335,7 @@ async function handleSignup() {
 		});
 		
 		// Даём браузеру время обработать cookies
-		await new Promise(resolve => setTimeout(resolve, 100));
+		await new Promise(resolve => setTimeout(resolve, 300));
 		
 		// Загружаем данные пользователя
 		const loaded = await loadUserData();
