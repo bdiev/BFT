@@ -408,9 +408,9 @@ input:focus, select:focus {
 .history {
 	display: grid;
 	gap: 12px;
-	max-height: 320px;
-	overflow-y: auto;
-	padding-right: 8px;
+	max-height: none;
+	overflow: visible;
+	padding-right: 0;
 }
 
 .history::-webkit-scrollbar {
