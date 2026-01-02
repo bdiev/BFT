@@ -856,6 +856,13 @@ function updateUserBadge() {
 			logoutForm.style.display = 'block';
 			modalTitle.textContent = 'Аккаунт';
 			userDisplayName.textContent = currentUser;
+			
+			// Устанавливаем текущий пол в селекторе
+			const accountGenderSelect = document.getElementById('accountGender');
+			if (accountGenderSelect) {
+				accountGenderSelect.value = sexState.current || 'male';
+			}
+			
 			logoutBtn.style.display = '';
 			loginBtn.style.display = 'none';
 			toggleSignupBtn.style.display = 'none';
@@ -1839,6 +1846,48 @@ async function handleChangePassword() {
 	}
 }
 
+// Handle gender change in account settings
+async function handleGenderChange() {
+	const gender = document.getElementById('accountGender')?.value;
+	const statusEl = document.getElementById('genderChangeStatus');
+
+	if (!statusEl) return;
+
+	if (!gender || (gender !== 'male' && gender !== 'female')) {
+		statusEl.textContent = '❌ Выбери пол';
+		statusEl.style.color = '#ef4444';
+		return;
+	}
+
+	try {
+		statusEl.textContent = '⏳ Сохраняю...';
+		statusEl.style.color = '#a5b4fc';
+
+		await apiCall('/api/change-gender', {
+			method: 'POST',
+			body: JSON.stringify({ gender })
+		});
+
+		// Обновляем пол в состоянии приложения
+		sexState.current = gender;
+		hipWrap.style.display = gender === 'female' ? 'block' : 'none';
+
+		statusEl.textContent = '✓ Пол успешно обновлён!';
+		statusEl.style.color = '#86efac';
+
+		// Перезагружаем настройки воды (т.к. норма зависит от пола)
+		await loadWaterSettings();
+		
+		setTimeout(() => {
+			statusEl.textContent = '';
+		}, 3000);
+	} catch (err) {
+		console.error('⚧️ Ошибка смены пола:', err);
+		statusEl.textContent = '❌ ' + err.message;
+		statusEl.style.color = '#ef4444';
+	}
+}
+
 async function saveWaterSettings() {
 	const weight = parseFloat(document.getElementById('waterWeight').value);
 	const activity = document.getElementById('waterActivity').value;
@@ -2307,6 +2356,7 @@ backToLoginBtn?.addEventListener('click', toggleSignupForm);
 document.getElementById('toggleChangePassword')?.addEventListener('click', toggleChangePasswordForm);
 document.getElementById('saveNewPassword')?.addEventListener('click', handleChangePassword);
 document.getElementById('cancelChangePassword')?.addEventListener('click', toggleChangePasswordForm);
+document.getElementById('saveGenderBtn')?.addEventListener('click', handleGenderChange);
 document.getElementById('deleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
 document.getElementById('adminPanelBtn')?.addEventListener('click', () => {
 	window.location.href = '/admin.html';

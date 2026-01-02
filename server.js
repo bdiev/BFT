@@ -560,6 +560,35 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+// Изменение пола пользователя
+app.post('/api/change-gender', authenticateToken, async (req, res) => {
+  const { gender } = req.body;
+  console.log('⚧️ Смена пола - req.userId:', req.userId, 'новый gender:', gender);
+  
+  if (!gender || (gender !== 'male' && gender !== 'female')) {
+    return res.status(400).json({ error: 'Некорректное значение пола' });
+  }
+  
+  try {
+    await new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE users SET gender = ? WHERE id = ?',
+        [gender, req.userId],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+    
+    console.log('✓ Пол успешно обновлен на:', gender);
+    res.json({ message: 'Пол успешно изменён!', gender });
+  } catch (err) {
+    console.error('Ошибка смены пола:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 // ===== ФУНКЦИЯ РАСЧЕТА ДНЕВНОЙ НОРМЫ ВОДЫ =====
 // Формула расчета:
 // Для мужчин: вес (кг) * 35 мл + 500 мл (базовый минимум)
