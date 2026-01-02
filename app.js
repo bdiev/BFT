@@ -2433,7 +2433,6 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 		}
 		
 		console.log('✓ После loadUserData - authenticated:', authenticated, 'currentUser:', currentUser, 'история:', history.length);
-		setSex('male');
 		updateUserBadge();
 		console.log('✓ updateUserBadge завершен');
 		
