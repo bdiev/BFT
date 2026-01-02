@@ -223,6 +223,7 @@ function authenticateToken(req, res, next) {
 // Регистрация
 app.post('/api/signup', async (req, res) => {
   const { username, email, password, gender } = req.body;
+  console.log('📝 signup: username:', username, 'gender:', gender, 'gender type:', typeof gender);
   
   if (!username || !password) {
     return res.status(400).json({ error: 'Username и пароль обязательны' });
@@ -233,6 +234,7 @@ app.post('/api/signup', async (req, res) => {
   }
   
   const userGender = gender === 'female' ? 'female' : 'male';
+  console.log('✓ userGender установлен:', userGender);
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);

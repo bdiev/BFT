@@ -909,6 +909,7 @@ async function handleSignup() {
 	const email = signupEmailInput.value.trim();
 	const password = signupPasswordInput.value.trim();
 	const gender = document.getElementById('signupGender').value;
+	console.log('📝 handleSignup: gender value:', gender, 'type:', typeof gender);
 	const status = document.getElementById('signupStatus');
 	
 	if (!username || !password) {
