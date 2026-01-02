@@ -67,6 +67,7 @@ db.serialize(() => {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE,
       password_hash TEXT NOT NULL,
+      gender TEXT DEFAULT 'male',
       is_admin INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -75,7 +76,7 @@ db.serialize(() => {
     else {
       console.log('✓ Таблица users готова');
       
-      // Проверяем, существует ли поле is_admin (для миграции существующих БД)
+      // Проверяем, существует ли поле is_admin и gender (для миграции существующих БД)
       db.all("PRAGMA table_info(users)", (err, columns) => {
         if (err) {
           console.error('Ошибка проверки структуры таблицы users:', err);
@@ -83,11 +84,21 @@ db.serialize(() => {
         }
         
         const hasIsAdmin = columns.some(col => col.name === 'is_admin');
+        const hasGender = columns.some(col => col.name === 'gender');
+        
         if (!hasIsAdmin) {
           console.log('Миграция: добавляем поле is_admin...');
           db.run("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0", (err) => {
-            if (err) console.error('Ошибка миграции:', err);
+            if (err) console.error('Ошибка миграции is_admin:', err);
             else console.log('✓ Поле is_admin добавлено');
+          });
+        }
+        
+        if (!hasGender) {
+          console.log('Миграция: добавляем поле gender...');
+          db.run("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'male'", (err) => {
+            if (err) console.error('Ошибка миграции gender:', err);
+            else console.log('✓ Поле gender добавлено');
           });
         }
       });
@@ -197,7 +208,7 @@ function authenticateToken(req, res, next) {
 
 // Регистрация
 app.post('/api/signup', async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, gender } = req.body;
   
   if (!username || !password) {
     return res.status(400).json({ error: 'Username и пароль обязательны' });
@@ -207,12 +218,14 @@ app.post('/api/signup', async (req, res) => {
     return res.status(400).json({ error: 'Пароль должен быть не менее 4 символов' });
   }
   
+  const userGender = gender === 'female' ? 'female' : 'male';
+  
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     db.run(
-      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-      [username, email || null, hashedPassword],
+      'INSERT INTO users (username, email, password_hash, gender) VALUES (?, ?, ?, ?)',
+      [username, email || null, hashedPassword, userGender],
       function(err) {
         if (err) {
           console.error('DB Error:', err.message);
@@ -233,14 +246,15 @@ app.post('/api/signup', async (req, res) => {
         
         res.json({
           message: 'Аккаунт создан!',
-          user: { id: this.lastID, username, isAdmin: false }
+          user: { id: this.lastID, username, isAdmin: false, gender: userGender }
         });
         
         // Уведомляем админов о новой регистрации
         notifyAdmins('userRegistered', {
           id: this.lastID,
           username,
-          email: email || null
+          email: email || null,
+          gender: userGender
         });
       }
     );
@@ -259,7 +273,7 @@ app.post('/api/login', (req, res) => {
   }
   
   db.get(
-    'SELECT id, username, password_hash, is_admin FROM users WHERE username = ?',
+    'SELECT id, username, password_hash, is_admin, gender FROM users WHERE username = ?',
     [username],
     async (err, user) => {
       if (err || !user) {
@@ -282,7 +296,7 @@ app.post('/api/login', (req, res) => {
       
       res.json({
         message: 'Вошли успешно!',
-        user: { id: user.id, username: user.username, isAdmin: !!user.is_admin }
+        user: { id: user.id, username: user.username, isAdmin: !!user.is_admin, gender: user.gender }
       });
     }
   );
@@ -324,9 +338,14 @@ app.post('/api/delete-account', authenticateToken, (req, res) => {
 
 // Получить текущего пользователя
 app.get('/api/me', authenticateToken, (req, res) => {
-  db.get('SELECT is_admin FROM users WHERE id = ?', [req.userId], (err, row) => {
+  db.get('SELECT is_admin, gender FROM users WHERE id = ?', [req.userId], (err, row) => {
     if (err) return res.status(500).json({ error: 'Ошибка БД' });
-    res.json({ id: req.userId, username: req.username, isAdmin: row ? !!row.is_admin : false });
+    res.json({ 
+      id: req.userId, 
+      username: req.username, 
+      isAdmin: row ? !!row.is_admin : false, 
+      gender: row ? (row.gender || 'male') : 'male'
+    });
   });
 });
 
@@ -525,28 +544,79 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== ФУНКЦИЯ РАСЧЕТА ДНЕВНОЙ НОРМЫ ВОДЫ =====
+// Формула расчета:
+// Для мужчин: вес (кг) * 35 мл + 500 мл (базовый минимум)
+// Для женщин: вес (кг) * 31 мл + 300 мл (базовый минимум)
+function calculateDailyWaterGoal(weight, gender, activity = 'moderate') {
+  if (!weight || weight <= 0) return 2000; // Дефолт
+  
+  let baseAmount = 0;
+  if (gender === 'female') {
+    baseAmount = Math.round(weight * 31 + 300);
+  } else {
+    baseAmount = Math.round(weight * 35 + 500);
+  }
+  
+  // Корректируем по уровню активности
+  let multiplier = 1;
+  switch (activity) {
+    case 'sedentary':
+      multiplier = 0.9;
+      break;
+    case 'light':
+      multiplier = 1;
+      break;
+    case 'moderate':
+      multiplier = 1.1;
+      break;
+    case 'active':
+      multiplier = 1.2;
+      break;
+    case 'very_active':
+      multiplier = 1.3;
+      break;
+    default:
+      multiplier = 1;
+  }
+  
+  return Math.round(baseAmount * multiplier);
+}
+
 // ===== API ВОДА =====
 // Получить настройки воды пользователя
 app.get('/api/water-settings', authenticateToken, (req, res) => {
-  db.get('SELECT * FROM water_settings WHERE user_id = ?', [req.userId], (err, row) => {
+  // Сначала получаем пол пользователя
+  db.get('SELECT gender FROM users WHERE id = ?', [req.userId], (err, user) => {
     if (err) return res.status(500).json({ error: 'Ошибка БД' });
-    if (!row) {
-      // Если нет настроек, создаём значения по умолчанию
-      return res.json({
-        weight: 70,
-        activity: 'moderate',
-        daily_goal: 2000,
-        reset_time: '00:00',
-        quick_buttons: [
-          { name: '💧 Вода 500мл', amount: 500 },
-          { name: '🥤 Сок 250мл', amount: 250 },
-          { name: '☕ Кофе 200мл', amount: 200 }
-        ]
+    
+    const userGender = user && user.gender ? user.gender : 'male';
+    
+    db.get('SELECT * FROM water_settings WHERE user_id = ?', [req.userId], (err, row) => {
+      if (err) return res.status(500).json({ error: 'Ошибка БД' });
+      if (!row) {
+        // Если нет настроек, создаём значения по умолчанию
+        const defaultWeight = 70;
+        const defaultGoal = calculateDailyWaterGoal(defaultWeight, userGender, 'moderate');
+        
+        return res.json({
+          weight: defaultWeight,
+          gender: userGender,
+          activity: 'moderate',
+          daily_goal: defaultGoal,
+          reset_time: '00:00',
+          quick_buttons: [
+            { name: '💧 Вода 500мл', amount: 500 },
+            { name: '🥤 Сок 250мл', amount: 250 },
+            { name: '☕ Кофе 200мл', amount: 200 }
+          ]
+        });
+      }
+      res.json({
+        ...row,
+        gender: userGender,
+        quick_buttons: JSON.parse(row.quick_buttons || '[]')
       });
-    }
-    res.json({
-      ...row,
-      quick_buttons: JSON.parse(row.quick_buttons || '[]')
     });
   });
 });
@@ -555,20 +625,34 @@ app.get('/api/water-settings', authenticateToken, (req, res) => {
 app.post('/api/water-settings', authenticateToken, (req, res) => {
   const { weight, activity, daily_goal, reset_time, quick_buttons } = req.body;
   
-  db.run(
-    `INSERT INTO water_settings (user_id, weight, activity, daily_goal, reset_time, quick_buttons)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-     weight = ?, activity = ?, daily_goal = ?, reset_time = ?, quick_buttons = ?, updated_at = CURRENT_TIMESTAMP`,
-    [
-      req.userId, weight, activity, daily_goal, reset_time, JSON.stringify(quick_buttons),
-      weight, activity, daily_goal, reset_time, JSON.stringify(quick_buttons)
-    ],
-    (err) => {
-      if (err) return res.status(500).json({ error: 'Ошибка сохранения' });
-      res.json({ message: 'Настройки сохранены' });
-    }
-  );
+  // Получаем пол пользователя для автоматического расчета цели если её не предоставили
+  db.get('SELECT gender FROM users WHERE id = ?', [req.userId], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    
+    const userGender = user && user.gender ? user.gender : 'male';
+    // Если дневная цель не предоставлена или равна нулю, рассчитываем её
+    const finalDailyGoal = (daily_goal && daily_goal > 0) 
+      ? daily_goal 
+      : calculateDailyWaterGoal(weight, userGender, activity);
+    
+    db.run(
+      `INSERT INTO water_settings (user_id, weight, activity, daily_goal, reset_time, quick_buttons)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+       weight = ?, activity = ?, daily_goal = ?, reset_time = ?, quick_buttons = ?, updated_at = CURRENT_TIMESTAMP`,
+      [
+        req.userId, weight, activity, finalDailyGoal, reset_time, JSON.stringify(quick_buttons),
+        weight, activity, finalDailyGoal, reset_time, JSON.stringify(quick_buttons)
+      ],
+      (err) => {
+        if (err) return res.status(500).json({ error: 'Ошибка сохранения' });
+        res.json({ 
+          message: 'Настройки сохранены',
+          daily_goal: finalDailyGoal 
+        });
+      }
+    );
+  });
 });
 
 // Получить логи воды за сегодня

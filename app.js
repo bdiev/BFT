@@ -922,12 +922,12 @@ function classify(bf, sex) {
 				{ max: 100, label: 'Высокий', tone: 'warn' } ];
 	return ranges.find(r => bf <= r.max);
 }
-
 // ===== АВТОРИЗАЦИЯ =====
 async function handleSignup() {
 	const username = signupUsernameInput.value.trim();
 	const email = signupEmailInput.value.trim();
 	const password = signupPasswordInput.value.trim();
+	const gender = document.getElementById('signupGender').value;
 	const status = document.getElementById('signupStatus');
 	
 	if (!username || !password) {
@@ -942,7 +942,7 @@ async function handleSignup() {
 		
 		const result = await apiCall('/api/signup', {
 			method: 'POST',
-			body: JSON.stringify({ username, email: email || null, password })
+			body: JSON.stringify({ username, email: email || null, password, gender })
 		});
 		
 		// Даём браузеру время обработать cookies
@@ -970,6 +970,7 @@ async function handleSignup() {
 		signupUsernameInput.value = '';
 		signupEmailInput.value = '';
 		signupPasswordInput.value = '';
+		document.getElementById('signupGender').value = 'male';
 		
 		updateUserBadge();
 		renderHistory();
