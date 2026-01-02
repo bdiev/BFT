@@ -86,11 +86,32 @@ db.serialize(() => {
         const hasIsAdmin = columns.some(col => col.name === 'is_admin');
         const hasGender = columns.some(col => col.name === 'gender');
         
+        let migrationsCompleted = 0;
+        let migrationsNeeded = (hasIsAdmin ? 0 : 1) + (hasGender ? 0 : 1);
+        
+        const checkAndFinalizeMigration = () => {
+          migrationsCompleted++;
+          if (migrationsCompleted === migrationsNeeded || migrationsNeeded === 0) {
+            // Проверяем количество пользователей в БД
+            db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+              if (err) console.error('Ошибка при подсчёте пользователей:', err);
+              else console.log(`📊 В БД всего пользователей: ${row.count}`);
+            });
+            
+            // Автоматически делаем пользователя "Admin" администратором
+            db.run("UPDATE users SET is_admin = 1 WHERE username = 'Admin'", function(err) {
+              if (err) console.error('Ошибка при назначении прав администратора:', err);
+              else if (this.changes > 0) console.log('✓ Пользователь "Admin" получил права администратора');
+            });
+          }
+        };
+        
         if (!hasIsAdmin) {
           console.log('Миграция: добавляем поле is_admin...');
           db.run("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0", (err) => {
             if (err) console.error('Ошибка миграции is_admin:', err);
             else console.log('✓ Поле is_admin добавлено');
+            checkAndFinalizeMigration();
           });
         }
         
@@ -99,7 +120,12 @@ db.serialize(() => {
           db.run("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'male'", (err) => {
             if (err) console.error('Ошибка миграции gender:', err);
             else console.log('✓ Поле gender добавлено');
+            checkAndFinalizeMigration();
           });
+        }
+        
+        if (migrationsNeeded === 0) {
+          checkAndFinalizeMigration();
         }
       });
     }
@@ -171,18 +197,6 @@ db.serialize(() => {
   `, (err) => {
     if (err) console.error('Ошибка создания таблицы water_logs:', err);
     else console.log('✓ Таблица water_logs готова');
-  });
-  
-  // Проверяем количество пользователей в БД
-  db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
-    if (err) console.error('Ошибка при подсчёте пользователей:', err);
-    else console.log(`📊 В БД всего пользователей: ${row.count}`);
-  });
-  
-  // Автоматически делаем пользователя "Admin" администратором
-  db.run("UPDATE users SET is_admin = 1 WHERE username = 'Admin'", function(err) {
-    if (err) console.error('Ошибка при назначении прав администратора:', err);
-    else if (this.changes > 0) console.log('✓ Пользователь "Admin" получил права администратора');
   });
 });
 
