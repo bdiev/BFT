@@ -377,7 +377,7 @@ input, select {
 	padding: 14px 16px;
 	border-radius: var(--radius-md);
 	border: 1.5px solid rgba(99, 102, 241, 0.15);
-	background: rgba(37, 45, 61, 0.6);
+	background: rgba(37, 45, 61, 0.8);
 	color: var(--text-dark);
 	outline: none;
 	transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
@@ -1279,10 +1279,18 @@ select {
 	font-family: inherit;
 	appearance: none;
 	padding-right: 30px;
+	background-color: rgba(37, 45, 61, 0.8);
+	color: var(--text-dark);
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a5b4fc' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 10px center;
 	padding-right: 36px;
+}
+
+select option {
+	background: #1a1f2e;
+	color: var(--text-dark);
+	padding: 8px;
 }
 
 /* Стили для графика воды */
