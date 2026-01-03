@@ -1002,6 +1002,12 @@ async function handleSignup() {
 		return;
 	}
 	
+	if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+		status.textContent = '❌ Логин может содержать только латиницу, цифры, подчеркивание и дефис';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
 	if (!password) {
 		status.textContent = '❌ Пароль обязателен';
 		status.style.color = '#ef4444';
