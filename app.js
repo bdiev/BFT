@@ -1638,6 +1638,11 @@ async function addWaterLog(amount, drinkType = 'вода') {
 		// Обновляем локальный список
 		await loadWaterLogs();
 		
+		// Вибрация при успешном добавлении
+		if (navigator.vibrate) {
+			navigator.vibrate(50); // Короткая вибрация 50мс
+		}
+		
 		// Показываем короткое уведомление
 		showWaterNotification(`✅ Добавлено ${amount}мл`);
 	} catch (err) {
@@ -1663,6 +1668,12 @@ async function deleteWaterLog(id) {
 	try {
 		await apiCall(`/api/water-logs/${id}`, { method: 'DELETE' });
 		await loadWaterLogs();
+		
+		// Вибрация при удалении (две короткие)
+		if (navigator.vibrate) {
+			navigator.vibrate([30, 50, 30]); // Две короткие вибрации
+		}
+		
 		showWaterNotification('✅ Удалено');
 	} catch (err) {
 		console.error('✗ Ошибка удаления:', err);
