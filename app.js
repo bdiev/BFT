@@ -903,6 +903,7 @@ function updateUserBadge() {
 		const mainHeader = document.getElementById('mainHeader');
 		const userAccountBtn = document.getElementById('userAccountBtn');
 		const settingsBtn = document.getElementById('settingsBtn');
+		const logoutBtn = document.getElementById('logoutBtn');
 		const openAuthModal = document.getElementById('openAuthModal');
 		const accountDisplayName = document.getElementById('accountDisplayName');
 		const adminPanelBtn = document.getElementById('adminPanelBtn');
@@ -916,9 +917,9 @@ function updateUserBadge() {
 			mainHeader.style.display = 'flex';
 			
 			// Показываем кнопки аккаунта и настроек
-			userAccountBtn.textContent = currentUser;
-			userAccountBtn.style.display = 'inline-flex';
+		userAccountBtn.textContent = '👤 ' + currentUser;
 			settingsBtn.style.display = 'inline-flex';
+			logoutBtn.style.display = 'inline-flex';
 			openAuthModal.style.display = 'none';
 			
 			// Обновляем имя в модале аккаунта
@@ -949,6 +950,7 @@ function updateUserBadge() {
 			
 			userAccountBtn.style.display = 'none';
 			settingsBtn.style.display = 'none';
+			logoutBtn.style.display = 'none';
 			openAuthModal.style.display = '';
 			loginForm.style.display = 'block';
 			signupForm.style.display = 'none';
@@ -2819,6 +2821,22 @@ accountLogoutBtn?.addEventListener('click', async () => {
 settingsBtn?.addEventListener('click', () => {
 	settingsModal.classList.add('active');
 	document.body.style.overflow = 'hidden';
+});
+
+// Кнопка выйти в хедере
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+	try {
+		await fetch('/api/logout', { method: 'POST' });
+		authenticated = false;
+		currentUser = null;
+		currentUserData = null;
+		localStorage.removeItem('rememberMe_username');
+		localStorage.removeItem('rememberMe_password');
+		updateUserBadge();
+		location.reload();
+	} catch (err) {
+		console.error('Ошибка выхода:', err);
+	}
 });
 
 closeSettingsModal?.addEventListener('click', () => {
