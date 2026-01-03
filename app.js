@@ -623,7 +623,6 @@ async function saveUserSettings(partialVisibility = {}, newOrder = null) {
 async function apiCall(endpoint, options = {}) {
 	try {
 		const fullUrl = new URL(endpoint, window.location.origin).href;
-		console.log('📡 API запрос к:', fullUrl);
 		const response = await fetch(fullUrl, {
 			credentials: 'include',
 			...options,
@@ -632,13 +631,11 @@ async function apiCall(endpoint, options = {}) {
 				...options.headers
 			}
 		});
-		console.log('📡 Ответ:', response.status, response.statusText);
 		if (!response.ok) {
 			const error = await response.json();
 			throw new Error(error.error || 'API ошибка');
 		}
 		const data = await response.json();
-		console.log('📡 Данные:', data);
 		return data;
 	} catch (err) {
 		console.error('API ошибка:', err);
@@ -924,7 +921,12 @@ function updateUserBadge() {
 		openAuthModal.style.display = 'none';
 		
 		// Обновляем имя в модале аккаунта
-			if (accountGenderSelect) {
+		if (accountDisplayName) {
+			accountDisplayName.textContent = currentUser;
+		}
+		
+		// Устанавливаем текущий пол в селекторе
+		const accountGenderSelect = document.getElementById('accountGender');
 				accountGenderSelect.value = sexState.current || 'male';
 			}
 			
