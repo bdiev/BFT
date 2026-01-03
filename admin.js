@@ -273,6 +273,9 @@ function sortUsers(field) {
 		if (field === 'created_at') {
 			aVal = new Date(aVal).getTime();
 			bVal = new Date(bVal).getTime();
+		} else if (field === 'username') {
+			aVal = (aVal || '').toLowerCase();
+			bVal = (bVal || '').toLowerCase();
 		} else if (field === 'gender') {
 			aVal = aVal === 'female' ? 0 : 1;
 			bVal = bVal === 'female' ? 0 : 1;
