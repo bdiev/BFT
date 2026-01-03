@@ -255,8 +255,7 @@ body {
 }
 
 .users-table th.sortable:hover {
-	background: var(--bg-primary);
-	color: var(--accent);
+	color: var(--text-primary);
 }
 
 .users-table th.sortable::after {
