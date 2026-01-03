@@ -552,11 +552,9 @@ async function syncCardSettingsFromServer() {
 	
 	try {
 		const now = Date.now();
-		// Проверяем не чаще чем раз в 3 секунды
-		if (now - lastSyncTime < 3000) return;
+		// Проверяем не чаще чем раз в 1 секунду
+		if (now - lastSyncTime < 1000) return;
 		lastSyncTime = now;
-		
-		console.log('🔄 Проверка обновлений настроек карточек...');
 		
 		const settings = await apiCall('/api/user-settings');
 		if (!settings) return;
@@ -570,7 +568,6 @@ async function syncCardSettingsFromServer() {
 	const orderChanged = JSON.stringify(serverOrder) !== JSON.stringify(lastCardOrder);
 	
 	if (visibilityChanged || orderChanged) {
-		console.log('🔄 Обновление настроек с сервера (с другого устройства)');
 		lastCardVisibility = { ...serverVisibility };
 		lastCardOrder = [...serverOrder];
 		
@@ -1183,8 +1180,7 @@ async function handleLogin() {
 		
 		// Запускаем периодическую синхронизацию настроек карточек
 		if (!window.cardSyncInterval) {
-			console.log('✓ Запуск синхронизации настроек карточек после входа');
-			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 3000);
+			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 1500);
 		}
 		
 		// Закрываем модаль после успешного входа
@@ -2763,8 +2759,7 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 		
 		// Периодическая синхронизация настроек карточек между устройствами
 		if (authenticated && !window.cardSyncInterval) {
-			console.log('✓ Запуск периодической синхронизации настроек карточек');
-			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 3000); // Проверяем каждые 3 секунды
+			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 1500);
 		}
 		
 		window.addEventListener('resize', () => {
