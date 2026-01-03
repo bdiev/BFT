@@ -741,6 +741,16 @@ const openAuthModal = document.getElementById('openAuthModal');
 const closeAuthModal = document.getElementById('closeAuthModal');
 const installPromptTrigger = document.getElementById('installPromptTrigger');
 
+// Новые модали
+const accountModal = document.getElementById('accountModal');
+const closeAccountModal = document.getElementById('closeAccountModal');
+const userAccountBtn = document.getElementById('userAccountBtn');
+const accountLogoutBtn = document.getElementById('accountLogoutBtn');
+
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsModal = document.getElementById('closeSettingsModal');
+const settingsBtn = document.getElementById('settingsBtn');
+
 const hipWrap = document.getElementById('hip-wrap');
 const calcBtn = document.getElementById('calcBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -753,10 +763,7 @@ const ctx = chart.getContext('2d');
 const userSelect = document.getElementById('userSelect');
 const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const logoutHeaderBtn = document.getElementById('logoutHeaderBtn');
 const authStatus = document.getElementById('authStatus');
-const currentUserPill = document.getElementById('current-user-pill');
 
 // Регистрация элементы
 const signupForm = document.getElementById('signupForm');
@@ -831,12 +838,15 @@ document.getElementById('entryDetailModal')?.addEventListener('click', (e) => {
 function updateUserBadge() {
 	try {
 		const loginForm = document.getElementById('loginForm');
-		const logoutForm = document.getElementById('logoutForm');
 		const modalTitle = document.getElementById('modalTitle');
-		const userDisplayName = document.getElementById('userDisplayName');
 		const landingPage = document.getElementById('landingPage');
 		const appContent = document.getElementById('appContent');
 		const mainHeader = document.getElementById('mainHeader');
+		const userAccountBtn = document.getElementById('userAccountBtn');
+		const settingsBtn = document.getElementById('settingsBtn');
+		const openAuthModal = document.getElementById('openAuthModal');
+		const accountDisplayName = document.getElementById('accountDisplayName');
+		const adminPanelBtn = document.getElementById('adminPanelBtn');
 		
 		console.log('updateUserBadge: authenticated=', authenticated, 'currentUser=', currentUser);
 		
@@ -846,16 +856,16 @@ function updateUserBadge() {
 			appContent.style.display = 'block';
 			mainHeader.style.display = 'flex';
 			
-			currentUserPill.textContent = '✓ Ты: ' + currentUser;
-			currentUserPill.classList.remove('status-warn');
-			currentUserPill.classList.add('status-ok');
-			currentUserPill.style.display = 'inline-block';
+			// Показываем кнопки аккаунта и настроек
+			userAccountBtn.textContent = currentUser;
+			userAccountBtn.style.display = 'inline-flex';
+			settingsBtn.style.display = 'inline-flex';
 			openAuthModal.style.display = 'none';
-			logoutHeaderBtn && (logoutHeaderBtn.style.display = 'inline-flex');
-			loginForm.style.display = 'none';
-			logoutForm.style.display = 'block';
-			modalTitle.textContent = 'Аккаунт';
-			userDisplayName.textContent = currentUser;
+			
+			// Обновляем имя в модале аккаунта
+			if (accountDisplayName) {
+				accountDisplayName.textContent = currentUser;
+			}
 			
 			// Устанавливаем текущий пол в селекторе
 			const accountGenderSelect = document.getElementById('accountGender');
@@ -863,7 +873,13 @@ function updateUserBadge() {
 				accountGenderSelect.value = sexState.current || 'male';
 			}
 			
-			logoutBtn.style.display = '';
+			// Показываем админ-панель если пользователь админ
+			if (adminPanelBtn && currentUserData?.is_admin) {
+				adminPanelBtn.style.display = '';
+			} else if (adminPanelBtn) {
+				adminPanelBtn.style.display = 'none';
+			}
+			
 			loginBtn.style.display = 'none';
 			toggleSignupBtn.style.display = 'none';
 		} else {
@@ -872,15 +888,11 @@ function updateUserBadge() {
 			appContent.style.display = 'none';
 			mainHeader.style.display = 'none';
 			
-			currentUserPill.style.display = 'none';
-			currentUserPill.classList.remove('status-ok');
-			currentUserPill.classList.add('status-warn');
+			userAccountBtn.style.display = 'none';
+			settingsBtn.style.display = 'none';
 			openAuthModal.style.display = '';
-			logoutHeaderBtn && (logoutHeaderBtn.style.display = 'none');
 			loginForm.style.display = 'block';
-			logoutForm.style.display = 'none';
 			signupForm.style.display = 'none';
-			logoutBtn.style.display = 'none';
 			loginBtn.style.display = '';
 			toggleSignupBtn.style.display = '';
 		}
@@ -2554,6 +2566,53 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 			});
 		}
 })();
+
+// ===== ОБРАБОТЧИКИ МОДАЛЬНЫХ ОКОН =====
+// Модаль аккаунта
+userAccountBtn?.addEventListener('click', () => {
+	accountModal.classList.add('active');
+	document.body.style.overflow = 'hidden';
+});
+
+closeAccountModal?.addEventListener('click', () => {
+	accountModal.classList.remove('active');
+	document.body.style.overflow = '';
+});
+
+accountModal?.addEventListener('click', (e) => {
+	if (e.target === accountModal) {
+		accountModal.classList.remove('active');
+		document.body.style.overflow = '';
+	}
+});
+
+accountLogoutBtn?.addEventListener('click', async () => {
+	if (!confirm('Точно выйти?')) return;
+	try {
+		await apiCall('/api/logout', { method: 'POST' });
+		window.location.reload();
+	} catch (err) {
+		alert('Ошибка выхода: ' + err.message);
+	}
+});
+
+// Модаль настроек
+settingsBtn?.addEventListener('click', () => {
+	settingsModal.classList.add('active');
+	document.body.style.overflow = 'hidden';
+});
+
+closeSettingsModal?.addEventListener('click', () => {
+	settingsModal.classList.remove('active');
+	document.body.style.overflow = '';
+});
+
+settingsModal?.addEventListener('click', (e) => {
+	if (e.target === settingsModal) {
+		settingsModal.classList.remove('active');
+		document.body.style.overflow = '';
+	}
+});
 
 	// Резерв: если DOM уже готов, добавим класс для анимации входа
 	document.addEventListener('DOMContentLoaded', () => {

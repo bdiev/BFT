@@ -63,8 +63,9 @@ body:not(.page-ready) .wrap {
 
 body:not(.page-ready) .site-footer {
 	opacity: 0;
-	transform: translateY(24px);
+	transform: translateY(40px);
 	pointer-events: none;
+	visibility: hidden;
 }
 
 body.page-ready .wrap {
@@ -76,7 +77,8 @@ body.page-ready .wrap {
 body.page-ready .site-footer {
 	opacity: 1;
 	transform: translateY(0);
-	transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
+	visibility: visible;
+	transition: opacity 0.5s ease 0.6s, transform 0.5s ease 0.6s, visibility 0s 0s;
 }
 
 .wrap {
