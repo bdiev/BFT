@@ -2364,8 +2364,6 @@ clearBtn.addEventListener('click', clearHistory);
 loginBtn.addEventListener('click', () => {
 	handleLogin();
 });
-logoutBtn.addEventListener('click', handleLogout);
-logoutHeaderBtn?.addEventListener('click', handleLogout);
 signupBtn?.addEventListener('click', handleSignup);
 toggleSignupBtn?.addEventListener('click', toggleSignupForm);
 backToLoginBtn?.addEventListener('click', toggleSignupForm);
