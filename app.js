@@ -556,6 +556,8 @@ async function syncCardSettingsFromServer() {
 		if (now - lastSyncTime < 3000) return;
 		lastSyncTime = now;
 		
+		console.log('🔄 Проверка обновлений настроек карточек...');
+		
 		const settings = await apiCall('/api/user-settings');
 		if (!settings) return;
 		
@@ -1177,6 +1179,12 @@ async function handleLogin() {
 		// Загружаем настройки воды и логи
 		await loadWaterSettings();
 		await loadWaterLogs();
+		
+		// Запускаем периодическую синхронизацию настроек карточек
+		if (!window.cardSyncInterval) {
+			console.log('✓ Запуск синхронизации настроек карточек после входа');
+			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 3000);
+		}
 		
 		// Закрываем модаль после успешного входа
 		setTimeout(() => {
@@ -2753,8 +2761,9 @@ document.getElementById('waterPeriodYear')?.addEventListener('click', () => {
 		console.log('✓ Инициализация завершена');
 		
 		// Периодическая синхронизация настроек карточек между устройствами
-		if (authenticated) {
-			setInterval(syncCardSettingsFromServer, 2000); // Проверяем каждые 2 секунды
+		if (authenticated && !window.cardSyncInterval) {
+			console.log('✓ Запуск периодической синхронизации настроек карточек');
+			window.cardSyncInterval = setInterval(syncCardSettingsFromServer, 3000); // Проверяем каждые 3 секунды
 		}
 		
 		window.addEventListener('resize', () => {
