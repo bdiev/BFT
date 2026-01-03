@@ -716,16 +716,43 @@ input[type="text"]:focus {
 
 	.header-content {
 		flex-direction: column;
-		align-items: flex-start;
+		align-items: stretch;
+		gap: 12px;
 	}
 
-	.header-left,
+	.header-left {
+		width: 100%;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+	
+	.header-left h1 {
+		font-size: 22px;
+		flex: 1 1 100%;
+	}
+	
+	.admin-badge {
+		order: 2;
+	}
+	
+	.current-user {
+		order: 1;
+		flex: 1;
+		text-align: left;
+	}
+
 	.header-right {
 		width: 100%;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 	}
-
-	.header-right {
-		flex-wrap: wrap;
+	
+	.btn-back,
+	.btn-logout {
+		width: 100%;
+		min-width: unset;
 	}
 
 	.stats-section {

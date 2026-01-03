@@ -54,23 +54,29 @@ body::before {
 	z-index: -1;
 }
 
-/* Плавный вход страницы (контент + футер одновременно) */
-body:not(.page-ready) .wrap,
-body:not(.page-ready) .site-footer {
+/* Плавный вход страницы (контент сначала, футер потом) */
+body:not(.page-ready) .wrap {
 	opacity: 0;
 	transform: translateY(16px);
 	pointer-events: none;
 }
 
-body.page-ready .wrap,
-body.page-ready .site-footer {
+body:not(.page-ready) .site-footer {
+	opacity: 0;
+	transform: translateY(24px);
+	pointer-events: none;
+}
+
+body.page-ready .wrap {
 	opacity: 1;
 	transform: translateY(0);
 	transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 body.page-ready .site-footer {
-	transition-delay: 60ms;
+	opacity: 1;
+	transform: translateY(0);
+	transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
 }
 
 .wrap {
