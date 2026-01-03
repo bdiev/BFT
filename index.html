@@ -64,88 +64,8 @@
 					</div>
 					<p class="muted" id="signupStatus" style="margin: 0 0 16px; font-size: 13px;"></p>
 				</div>
-				<div id="logoutForm" style="display: none;">
-					<div id="accountInfo" style="text-align: center; margin-bottom: 20px;">
-						<p style="font-size: 32px; margin: 0 0 12px;">✓</p>
-						<p class="label" style="margin: 0; font-size: 16px;">Ты вошёл как</p>
-						<p style="font-size: 24px; font-weight: 700; margin: 8px 0 16px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="userDisplayName">User</p>
-						<p class="muted" style="margin: 0; font-size: 13px;">Твои данные сохраняются безопасно на сервере</p>
-					</div>
-				<div id="genderSettingsSection" class="account-toggle" style="border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 14px; margin-bottom: 16px; background: rgba(99, 102, 241, 0.05);">
-					<h3 style="margin: 0 0 8px; font-size: 16px; font-weight: 700;">Настройки пола</h3>
-					<p class="muted" style="margin: 0 0 12px; font-size: 12px;">Влияет на формулу расчета жира и норму воды</p>
-					<div style="margin-bottom: 12px;">
-						<label for="accountGender" class="label">Твой пол</label>
-						<select id="accountGender" style="width: 100%; padding: 12px 16px; border: 1.5px solid rgba(99, 102, 241, 0.15); border-radius: 12px; background: rgba(37, 45, 61, 0.8); color: var(--text-dark); font-family: inherit; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
-							<option value="male" style="background: #1a1f2e; color: #f8f9fb;">♂️ Парень</option>
-							<option value="female" style="background: #1a1f2e; color: #f8f9fb;">♀️ Девушка</option>
-						</select>
-					</div>
-					<button class="primary" id="saveGenderBtn" style="width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: 600; border-radius: 10px;">Сохранить пол</button>
-					<p class="muted" id="genderChangeStatus" style="margin: 10px 0 0; font-size: 12px; text-align: center;"></p>
-				</div>
-					<div id="cardVisibilitySection" class="account-toggle" style="border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 14px; margin-bottom: 16px; background: rgba(99, 102, 241, 0.05);">
-						<h3 style="margin: 0 0 8px; font-size: 16px; font-weight: 700;">Видимость карточек</h3>
-						<p class="muted" style="margin: 0 0 12px; font-size: 12px;">Выбери, что показывать на главной странице</p>
-						<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
-							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-								<input type="checkbox" id="toggleFormCard" /> Форма расчёта
-							</label>
-							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-								<input type="checkbox" id="toggleHistoryCard" /> История прогресса
-							</label>
-							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-								<input type="checkbox" id="toggleChartCard" /> График жира
-							</label>
-							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-								<input type="checkbox" id="toggleWaterCard" /> Трекер воды
-							</label>
-							<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-								<input type="checkbox" id="toggleWaterChartCard" /> График воды
-							</label>
-						</div>
-						<div id="cardOrderSection" style="margin-top: 14px; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 12px; background: rgba(99, 102, 241, 0.05);">
-							<h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 700;">Порядок карточек</h4>
-							<p class="muted" style="margin: 0 0 10px; font-size: 12px;">Перемещай карточки вверх/вниз, чтобы настроить порядок</p>
-							<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-								<input type="checkbox" id="cardLayoutToggle" style="width:16px; height:16px; cursor:pointer;" />
-								<label for="cardLayoutToggle" style="margin:0; font-weight:600; font-size:13px; color: var(--text-dark);">Сетка 3 карточки в ряд</label>
-							</div>
-							<ul id="cardOrderList" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;"></ul>
-						</div>
-						<p class="muted" id="cardVisibilityStatus" style="margin: 10px 0 0; font-size: 12px;"></p>
-					</div>
-					
-					<div id="changePasswordForm" style="display: none; text-align: left;">
-						<h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Смена пароля</h3>
-						<div style="margin-bottom: 14px;">
-							<label for="currentPassword" class="label">Текущий пароль</label>
-							<input id="currentPassword" type="password" placeholder="Введи текущий пароль" />
-						</div>
-						<div style="margin-bottom: 14px;">
-							<label for="newPassword" class="label">Новый пароль</label>
-							<input id="newPassword" type="password" placeholder="Придумай новый пароль" />
-						</div>
-						<div style="margin-bottom: 16px;">
-							<label for="confirmPassword" class="label">Подтверди пароль</label>
-							<input id="confirmPassword" type="password" placeholder="Повтори новый пароль" />
-						</div>
-						<p class="muted" id="passwordChangeStatus" style="margin: 0 0 16px; font-size: 12px; text-align: center;"></p>
-						<div style="display: flex; gap: 8px;">
-							<button class="ghost" id="cancelChangePassword" style="flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: 600;">Отмена</button>
-							<button class="primary" id="saveNewPassword" style="flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: 600;">Сохранить</button>
-						</div>
-					</div>
-					
-					<div id="accountActions" style="text-align: center;">
-						<button class="ghost" id="adminPanelBtn" style="display: none; width: 100%; padding: 10px; border: none; margin-bottom: 12px; cursor: pointer; font-weight: 600; background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 10px; color: #c4b5fd; transition: all 0.2s;">⚙️ Админ-панель</button>
-						<button class="ghost" id="toggleChangePassword" style="width: 100%; padding: 10px; border: none; margin-bottom: 12px; cursor: pointer; font-weight: 600; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #a5b4fc; transition: all 0.2s;">Сменить пароль</button>
-						<button class="ghost" id="deleteAccountBtn" style="width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: 600; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; color: #fca5a5; transition: all 0.2s;">Удалить аккаунт</button>
-					</div>
-				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="ghost" id="logoutBtn">Выйти</button>
 				<button class="ghost" id="backToLogin" style="display: none;">Назад к входу</button>
 				<button class="ghost" id="toggleSignup">Создать аккаунт</button>
 				<button class="primary" id="loginBtn">Войти</button>
