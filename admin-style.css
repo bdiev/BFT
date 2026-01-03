@@ -108,7 +108,7 @@ body {
 .btn-logout {
 	background: var(--danger);
 	color: white;
-	border: none;
+	border: 1px solid var(--danger);
 	padding: 10px 20px;
 	border-radius: 8px;
 	font-weight: 500;
