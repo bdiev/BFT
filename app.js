@@ -561,20 +561,21 @@ async function syncCardSettingsFromServer() {
 		const settings = await apiCall('/api/user-settings');
 		if (!settings) return;
 		
-		// Проверяем изменилась ли видимость карточек
-		const visibilityChanged = JSON.stringify(settings.card_visibility) !== JSON.stringify(lastCardVisibility);
-		const orderChanged = JSON.stringify(settings.card_order) !== JSON.stringify(lastCardOrder);
+	// Нормализуем данные с сервера
+	const serverVisibility = settings.card_visibility || {};
+	const serverOrder = Array.isArray(settings.card_order) ? settings.card_order : defaultCardOrder();
+	
+	// Проверяем изменилась ли видимость карточек
+	const visibilityChanged = JSON.stringify(serverVisibility) !== JSON.stringify(lastCardVisibility);
+	const orderChanged = JSON.stringify(serverOrder) !== JSON.stringify(lastCardOrder);
+	
+	if (visibilityChanged || orderChanged) {
+		console.log('🔄 Обновление настроек с сервера (с другого устройства)');
+		lastCardVisibility = { ...serverVisibility };
+		lastCardOrder = [...serverOrder];
 		
-		if (visibilityChanged || orderChanged) {
-			console.log('🔄 Обновление настроек с сервера (с другого устройства)');
-			lastCardVisibility = { ...settings.card_visibility };
-			lastCardOrder = [...settings.card_order ];
-			
-			userSettings.card_visibility = settings.card_visibility || defaultCardVisibility();
-			userSettings.card_order = settings.card_order || defaultCardOrder();
-			
-			applyCardVisibility();
-			syncCardVisibilityUI();
+		userSettings.card_visibility = serverVisibility;
+		userSettings.card_order = serverOrder;
 			applyCardOrder();
 			
 			// Показываем краткое уведомление
