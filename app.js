@@ -921,8 +921,13 @@ function updateUserBadge() {
 		openAuthModal.style.display = 'none';
 		
 		// Обновляем имя в модале аккаунта
-			if (accountGenderSelect) {
-				accountGenderSelect.value = sexState.current || 'male';
+		if (accountDisplayName) {
+			accountDisplayName.textContent = currentUser;
+		}
+		
+		// Устанавливаем текущий пол в селекторе
+		const accountGenderSelect = document.getElementById('accountGender');
+	if (accountGenderSelect) {
 			}
 			
 			// Показываем админ-панель если пользователь админ
