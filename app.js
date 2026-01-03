@@ -925,6 +925,12 @@ async function handleSignup() {
 		return;
 	}
 	
+	if (!gender) {
+		status.textContent = '❌ Пожалуйста, укажи свой пол';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
 	try {
 		status.textContent = '⏳ Создаю аккаунт...';
 		status.style.color = '#a5b4fc';
