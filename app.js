@@ -990,8 +990,33 @@ async function handleSignup() {
 	console.log('📝 handleSignup: gender value:', gender, 'type:', typeof gender);
 	const status = document.getElementById('signupStatus');
 	
-	if (!username || !password) {
-		status.textContent = '❌ Username и пароль обязательны';
+	if (!username) {
+		status.textContent = '❌ Логин обязателен';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
+	if (username.length < 3) {
+		status.textContent = '❌ Логин должен быть минимум 3 символа';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
+	if (!password) {
+		status.textContent = '❌ Пароль обязателен';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
+	if (password.length < 8) {
+		status.textContent = '❌ Пароль должен быть минимум 8 символов';
+		status.style.color = '#ef4444';
+		return;
+	}
+	
+	const digitCount = (password.match(/\d/g) || []).length;
+	if (digitCount < 2) {
+		status.textContent = '❌ Пароль должен содержать минимум 2 цифры';
 		status.style.color = '#ef4444';
 		return;
 	}
@@ -1889,8 +1914,15 @@ async function handleChangePassword() {
 		return;
 	}
 
-	if (newPassword.length < 4) {
-		statusEl.textContent = '❌ Пароль должен быть не менее 4 символов';
+	if (newPassword.length < 8) {
+		statusEl.textContent = '❌ Пароль должен быть минимум 8 символов';
+		statusEl.style.color = '#ef4444';
+		return;
+	}
+	
+	const digitCount = (newPassword.match(/\d/g) || []).length;
+	if (digitCount < 2) {
+		statusEl.textContent = '❌ Пароль должен содержать минимум 2 цифры';
 		statusEl.style.color = '#ef4444';
 		return;
 	}
