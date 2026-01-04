@@ -1262,46 +1262,29 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
               if (err) return res.status(500).json({ error: 'Ошибка БД' });
               stats.recentUsers = rows || [];
               
-              // Получаем статистику по посещениям
-              db.get('SELECT COUNT(*) as count FROM visits WHERE is_anonymous = 0', (err, row) => {
+              // Получаем статистику по посещениям - ВСЕ В ОДНОМ ЗАПРОСЕ
+              db.get(`
+                SELECT 
+                  COUNT(*) as totalVisits,
+                  SUM(CASE WHEN is_anonymous = 0 THEN 1 ELSE 0 END) as registeredVisits,
+                  SUM(CASE WHEN is_anonymous = 1 THEN 1 ELSE 0 END) as anonymousVisits
+                FROM visits
+              `, (err, row) => {
                 if (err) {
-                  console.error('Ошибка получения registeredVisits:', err);
+                  console.error('Ошибка получения статистики посещений:', err);
                   stats.registeredVisits = 0;
                   stats.anonymousVisits = 0;
                   stats.totalVisits = 0;
-                  console.log('📊 Отправляем stats:', stats);
-                  res.json(stats);
-                  return;
-                }
-                
-                stats.registeredVisits = (row && row.count) ? row.count : 0;
-                console.log('✓ registeredVisits:', stats.registeredVisits);
-                
-                db.get('SELECT COUNT(*) as count FROM visits WHERE is_anonymous = 1', (err, row) => {
-                  if (err) {
-                    console.error('Ошибка получения anonymousVisits:', err);
-                    stats.anonymousVisits = 0;
-                    stats.totalVisits = stats.registeredVisits;
-                    console.log('📊 Отправляем stats:', stats);
-                    res.json(stats);
-                    return;
-                  }
-                  
-                  stats.anonymousVisits = (row && row.count) ? row.count : 0;
+                } else {
+                  stats.totalVisits = (row && row.totalVisits) ? row.totalVisits : 0;
+                  stats.registeredVisits = (row && row.registeredVisits) ? row.registeredVisits : 0;
+                  stats.anonymousVisits = (row && row.anonymousVisits) ? row.anonymousVisits : 0;
+                  console.log('✓ totalVisits:', stats.totalVisits);
+                  console.log('✓ registeredVisits:', stats.registeredVisits);
                   console.log('✓ anonymousVisits:', stats.anonymousVisits);
-                  
-                  db.get('SELECT COUNT(*) as count FROM visits', (err, row) => {
-                    if (err) {
-                      console.error('Ошибка получения totalVisits:', err);
-                      stats.totalVisits = stats.registeredVisits + stats.anonymousVisits;
-                    } else {
-                      stats.totalVisits = (row && row.count) ? row.count : 0;
-                    }
-                    console.log('✓ totalVisits:', stats.totalVisits);
-                    console.log('📊 Отправляем stats:', stats);
-                    res.json(stats);
-                  });
-                });
+                }
+                console.log('📊 Отправляем stats:', stats);
+                res.json(stats);
               });
             });
           });
