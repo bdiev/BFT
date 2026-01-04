@@ -1665,28 +1665,36 @@ function renderWaterLogs() {
 	const selectedDate = new Date(currentWaterLogsDate);
 	selectedDate.setHours(0, 0, 0, 0);
 	
-	const nextDate = new Date(selectedDate);
-	nextDate.setDate(nextDate.getDate() + 1);
-	
 	console.log('🔍 Фильтрация логов воды:');
 	console.log('  Выбранный день (локальный):', selectedDate.toString());
 	console.log('  Всего логов:', waterLogs.length);
 	
-	// Фильтруем логи по выбранному дню, сравнивая даты в локальном времени
-	const logsForDay = waterLogs.filter(log => {
-		// Парсим ISO дату и получаем локальную дату
-		const logDate = new Date(log.logged_at);
-		const logLocalDate = new Date(logDate);
-		logLocalDate.setHours(0, 0, 0, 0);
-		
-		const match = logLocalDate.getTime() === selectedDate.getTime();
-		
-		console.log(`  🔍 ${log.drink_type} (${log.logged_at}): локальная дата ${logLocalDate.toString()} ${match ? '✅' : '❌'}`);
-		
-		return match;
-	});
+	// Для "сегодня" используем ту же логику, что и renderWaterProgress
+	let logsForDay;
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
 	
-	console.log('  Найдено логов на этот день:', logsForDay.length);
+	if (selectedDate.getTime() === today.getTime()) {
+		// Для "сегодня" используем getLastWaterResetBoundary (как в progress bar)
+		const boundary = getLastWaterResetBoundary(waterSettings.reset_time);
+		logsForDay = waterLogs.filter(log => normalizeTimestamp(log.logged_at) >= boundary);
+		console.log(`  📍 Сегодня: используем boundary = ${new Date(boundary).toISOString()}`);
+		console.log(`  ✅ Найдено логов на сегодня (через boundary): ${logsForDay.length}`);
+	} else {
+		// Для прошлых дней сравниваем дни в локальном времени
+		logsForDay = waterLogs.filter(log => {
+			const logDate = new Date(log.logged_at);
+			const logLocalDate = new Date(logDate);
+			logLocalDate.setHours(0, 0, 0, 0);
+			
+			const match = logLocalDate.getTime() === selectedDate.getTime();
+			
+			console.log(`  🔍 ${log.drink_type} (${log.logged_at}): локальная дата ${logLocalDate.toString()} ${match ? '✅' : '❌'}`);
+			
+			return match;
+		});
+		console.log('  Найдено логов на этот день:', logsForDay.length);
+	}
 	
 	// Сортируем от новых к старым
 	const sorted = logsForDay.sort((a, b) => 
@@ -1698,9 +1706,6 @@ function renderWaterLogs() {
 	const totalDisplay = document.getElementById('waterLogsTotal');
 	
 	if (dateDisplay) {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		
 		if (selectedDate.getTime() === today.getTime()) {
 			dateDisplay.textContent = 'Сегодня';
 		} else {
