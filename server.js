@@ -236,6 +236,35 @@ db.serialize(() => {
     if (err) console.error('Ошибка создания таблицы visits:', err);
     else console.log('✓ Таблица visits готова');
   });
+
+  // Проверяем, существует ли таблица visits и её структура
+  setTimeout(() => {
+    db.all("PRAGMA table_info(visits)", (err, columns) => {
+      if (err) {
+        console.error('Ошибка проверки структуры visits:', err);
+        return;
+      }
+      
+      if (!columns || columns.length === 0) {
+        console.warn('⚠️ Таблица visits не существует! Пересоздаём...');
+        db.run(`
+          CREATE TABLE visits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            is_anonymous INTEGER DEFAULT 1,
+            visited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            user_agent TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          )
+        `, (err) => {
+          if (err) console.error('Ошибка пересоздания таблицы visits:', err);
+          else console.log('✓ Таблица visits успешно пересоздана');
+        });
+      } else {
+        console.log('✓ Таблица visits существует с' + columns.length + ' колонками');
+      }
+    });
+  }, 1000);
 });
 
 // Middleware проверки токена
@@ -880,14 +909,46 @@ app.delete('/api/weight-logs/:id', authenticateToken, (req, res) => {
 
 // ===== ЛОГИРОВАНИЕ ПОСЕЩЕНИЙ =====
 function logVisit(userId = null, isAnonymous = true) {
-  const query = `INSERT INTO visits (user_id, is_anonymous) VALUES (?, ?)`;
-  db.run(query, [userId || null, isAnonymous ? 1 : 0], (err) => {
-    if (err) {
-      console.error('❌ Ошибка логирования посещения:', err.message);
-    } else {
-      console.log(`✓ Посещение залогировано: user_id=${userId}, anonymous=${isAnonymous}`);
-    }
-  });
+  try {
+    const query = `INSERT INTO visits (user_id, is_anonymous) VALUES (?, ?)`;
+    db.run(query, [userId || null, isAnonymous ? 1 : 0], function(err) {
+      if (err) {
+        console.error('❌ Ошибка логирования посещения:', err.message);
+        // Пытаемся пересоздать таблицу если её нет
+        if (err.message.includes('no such table')) {
+          console.warn('⚠️ Таблица visits не существует! Создаём её...');
+          db.run(`
+            CREATE TABLE IF NOT EXISTS visits (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER,
+              is_anonymous INTEGER DEFAULT 1,
+              visited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              user_agent TEXT,
+              FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+          `, (createErr) => {
+            if (createErr) {
+              console.error('Ошибка создания таблицы visits:', createErr);
+            } else {
+              console.log('✓ Таблица visits создана');
+              // Повторяем попытку логирования
+              db.run(query, [userId || null, isAnonymous ? 1 : 0], (retryErr) => {
+                if (retryErr) {
+                  console.error('❌ Ошибка логирования посещения после пересоздания:', retryErr);
+                } else {
+                  console.log(`✓ Посещение залогировано: user_id=${userId}, anonymous=${isAnonymous}`);
+                }
+              });
+            }
+          });
+        }
+      } else {
+        console.log(`✓ Посещение залогировано: user_id=${userId}, anonymous=${isAnonymous}`);
+      }
+    });
+  } catch (err) {
+    console.error('❌ Критическая ошибка в logVisit:', err.message);
+  }
 }
 
 // Возвращаем фронт
@@ -1108,13 +1169,35 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
               
               // Получаем статистику по посещениям
               db.get('SELECT COUNT(*) as count FROM visits WHERE is_anonymous = 0', (err, row) => {
+                if (err) {
+                  console.error('Ошибка получения registeredVisits:', err);
+                  stats.registeredVisits = 0;
+                  stats.anonymousVisits = 0;
+                  stats.totalVisits = 0;
+                  res.json(stats);
+                  return;
+                }
+                
                 stats.registeredVisits = (row && row.count) ? row.count : 0;
                 
                 db.get('SELECT COUNT(*) as count FROM visits WHERE is_anonymous = 1', (err, row) => {
+                  if (err) {
+                    console.error('Ошибка получения anonymousVisits:', err);
+                    stats.anonymousVisits = 0;
+                    stats.totalVisits = stats.registeredVisits;
+                    res.json(stats);
+                    return;
+                  }
+                  
                   stats.anonymousVisits = (row && row.count) ? row.count : 0;
                   
                   db.get('SELECT COUNT(*) as count FROM visits', (err, row) => {
-                    stats.totalVisits = (row && row.count) ? row.count : 0;
+                    if (err) {
+                      console.error('Ошибка получения totalVisits:', err);
+                      stats.totalVisits = stats.registeredVisits + stats.anonymousVisits;
+                    } else {
+                      stats.totalVisits = (row && row.count) ? row.count : 0;
+                    }
                     res.json(stats);
                   });
                 });
