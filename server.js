@@ -25,9 +25,9 @@ app.use((req, res, next) => {
   console.log(`\n📨 ${req.method} ${req.path} from ${req.ip}`);
   console.log('   Cookies:', Object.keys(req.cookies).length ? req.cookies : 'нет');
   
-  // Логируем посещение главной страницы асинхронно
-  if (req.method === 'GET' && req.path === '/') {
-    console.log('🔔 GET / обнаружен - будет залогирован визит');
+  // Логируем посещение любой страницы сайта (GET запросы, кроме API)
+  if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+    console.log('🔔 GET ' + req.path + ' обнаружен - будет залогирован визит');
     setImmediate(() => {
       const token = req.cookies.token;
       console.log('   Token существует:', !!token);
