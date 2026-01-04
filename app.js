@@ -384,7 +384,8 @@ function normalizeCardVisibility(visibility = {}) {
 		chart: merged.chart === true,
 		waterTracker: merged.waterTracker === true,
 		waterChart: merged.waterChart === true,
-		weightTracker: merged.weightTracker === true
+		weightTracker: merged.weightTracker === true,
+		restTimer: merged.restTimer === true
 	};
 }
 
