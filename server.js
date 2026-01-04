@@ -163,6 +163,15 @@ db.serialize(() => {
   `, (err) => {
     if (err) console.error('Ошибка создания таблицы user_settings:', err);
     else console.log('✓ Таблица user_settings готова');
+    
+    // Миграция: добавить card_order если его нет
+    db.run(`ALTER TABLE user_settings ADD COLUMN card_order TEXT`, (err) => {
+      if (err && !err.message.includes('duplicate column')) {
+        console.error('Ошибка добавления card_order:', err);
+      } else if (!err) {
+        console.log('✓ Добавлена колонка card_order');
+      }
+    });
   });
 
   // Таблица настроек воды
@@ -410,13 +419,14 @@ function parseCardVisibility(raw) {
 
 // Получить настройки пользователя
 app.get('/api/user-settings', authenticateToken, (req, res) => {
-  db.get('SELECT card_visibility FROM user_settings WHERE user_id = ?', [req.userId], (err, row) => {
+  db.get('SELECT card_visibility, card_order FROM user_settings WHERE user_id = ?', [req.userId], (err, row) => {
     if (err) {
       console.error('Ошибка чтения user_settings:', err.message);
       return res.status(500).json({ error: 'Ошибка БД' });
     }
     const cardVisibility = row ? parseCardVisibility(row.card_visibility) : { ...DEFAULT_CARD_VISIBILITY };
-    res.json({ card_visibility: cardVisibility });
+    const cardOrder = row && row.card_order ? JSON.parse(row.card_order) : null;
+    res.json({ card_visibility: cardVisibility, card_order: cardOrder });
   });
 });
 
@@ -433,19 +443,24 @@ app.post('/api/user-settings', authenticateToken, (req, res) => {
     lastResult: incoming.lastResult !== false
   };
 
-  const serialized = JSON.stringify(cardVisibility);
+  const cardOrder = req.body?.card_order || null;
+  const serializedVisibility = JSON.stringify(cardVisibility);
+  const serializedOrder = cardOrder ? JSON.stringify(cardOrder) : null;
 
   db.run(
-    `INSERT INTO user_settings (user_id, card_visibility, updated_at)
-     VALUES (?, ?, CURRENT_TIMESTAMP)
-     ON CONFLICT(user_id) DO UPDATE SET card_visibility = excluded.card_visibility, updated_at = CURRENT_TIMESTAMP`,
-    [req.userId, serialized],
+    `INSERT INTO user_settings (user_id, card_visibility, card_order, updated_at)
+     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(user_id) DO UPDATE SET 
+       card_visibility = excluded.card_visibility, 
+       card_order = excluded.card_order,
+       updated_at = CURRENT_TIMESTAMP`,
+    [req.userId, serializedVisibility, serializedOrder],
     function(err) {
       if (err) {
         console.error('Ошибка сохранения user_settings:', err.message);
         return res.status(500).json({ error: 'Ошибка БД' });
       }
-      res.json({ card_visibility: cardVisibility });
+      res.json({ card_visibility: cardVisibility, card_order: cardOrder });
     }
   );
 });
@@ -832,6 +847,16 @@ app.get('/api/weight-logs/period', authenticateToken, (req, res) => {
   db.all('SELECT * FROM weight_logs WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at ASC', [req.userId, startISO], (err, rows) => {
     if (err) return res.status(500).json({ error: 'Ошибка загрузки' });
     res.json(rows || []);
+  });
+});
+
+// Удалить лог веса
+app.delete('/api/weight-logs/:id', authenticateToken, (req, res) => {
+  db.run('DELETE FROM weight_logs WHERE id = ? AND user_id = ?', [req.params.id, req.userId], function(err) {
+    if (err) return res.status(500).json({ error: 'Ошибка удаления' });
+    if (this.changes === 0) return res.status(404).json({ error: 'Лог не найден' });
+    res.json({ message: 'Удалено' });
+    notifyUserUpdate(req.userId, 'weightDeleted', { id: parseInt(req.params.id) });
   });
 });
 

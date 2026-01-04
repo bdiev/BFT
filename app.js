@@ -1836,6 +1836,58 @@ async function deleteWaterLog(id) {
 	}
 }
 
+async function deleteWeightLog(id) {
+	try {
+		await apiCall(`/api/weight-logs/${id}`, { method: 'DELETE' });
+		await loadWeightLogs();
+		
+		// Вибрация при удалении (две короткие)
+		try {
+			if ('vibrate' in navigator) {
+				navigator.vibrate([50, 100, 50]);
+			} else if ('webkitVibrate' in navigator) {
+				navigator.webkitVibrate([50, 100, 50]);
+			}
+		} catch (e) {
+			// Silent fail
+		}
+		
+		showWeightNotification('✅ Удалено');
+	} catch (err) {
+		console.error('✗ Ошибка удаления лога веса:', err);
+	}
+}
+
+function showWeightNotification(message) {
+	const notif = document.createElement('div');
+	notif.style.cssText = `
+		position: fixed;
+		bottom: 20px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: rgba(31, 41, 55, 0.95);
+		color: #e2e8f0;
+		padding: 12px 20px;
+		border-radius: 8px;
+		font-size: 14px;
+		z-index: 10000;
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		opacity: 0;
+		transition: opacity 0.3s;
+	`;
+	notif.textContent = message;
+	document.body.appendChild(notif);
+	
+	setTimeout(() => {
+		notif.style.opacity = '1';
+	}, 10);
+	
+	setTimeout(() => {
+		notif.style.opacity = '0';
+		setTimeout(() => notif.remove(), 300);
+	}, 2000);
+}
+
 function showWaterNotification(message) {
 	const notif = document.createElement('div');
 	notif.className = 'water-notification';
@@ -2155,7 +2207,6 @@ async function loadWeightLogs() {
 	try {
 		const logs = await apiCall('/api/weight-logs');
 		weightLogs = logs;
-		console.log('✓ Загружены логи веса:', weightLogs);
 		saveCache(CACHE_KEYS.weightLogs, weightLogs);
 		renderWeightLogs();
 	} catch (err) {
@@ -2205,7 +2256,10 @@ function renderWeightLogs() {
 		div.innerHTML = `
 			<div style="font-weight: 600; font-size: 16px; color: #e0e7ff;">${log.weight} кг</div>
 			<div style="font-size: 12px; color: #a5b4fc;">${dateStr}</div>
+			<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
 		`;
+		const deleteBtn = div.querySelector('button');
+		deleteBtn.addEventListener('click', () => deleteWeightLog(log.id));
 		container.appendChild(div);
 	});
 }
