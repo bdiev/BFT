@@ -814,7 +814,6 @@ async function loadUserData() {
 		}
 		
 		const entries = await apiCall('/api/history');
-		console.log('✓ Загруженные данные с сервера:', entries);
 		history = entries.map(e => ({
 			id: e.id,
 			sex: e.sex,
@@ -826,7 +825,6 @@ async function loadUserData() {
 			group: e.group,
 			timestamp: new Date(e.timestamp).getTime()
 		}));
-		console.log('✓ Обработанная история:', history);
 		saveCache(CACHE_KEYS.user, { id: userId, username: currentUser });
 		saveCache(CACHE_KEYS.history, history);
 		
@@ -973,8 +971,6 @@ function updateUserBadge() {
 		const accountDisplayName = document.getElementById('accountDisplayName');
 		const adminPanelBtn = document.getElementById('adminPanelBtn');
 		
-		console.log('updateUserBadge: authenticated=', authenticated, 'currentUser=', currentUser);
-		
 		if (authenticated && currentUser) {
 			// Скрываем landing page, показываем приложение
 			landingPage.style.display = 'none';
@@ -1054,7 +1050,6 @@ async function handleSignup() {
 	const email = signupEmailInput.value.trim();
 	const password = signupPasswordInput.value.trim();
 	const gender = document.getElementById('signupGender').value;
-	console.log('📝 handleSignup: gender value:', gender, 'type:', typeof gender);
 	const status = document.getElementById('signupStatus');
 	
 	if (!username) {
@@ -1157,8 +1152,6 @@ async function handleSignup() {
 
 async function autoLogin(username, password) {
 	try {
-		console.log('⏳ Проверяю данные...'); 
-		
 		const result = await apiCall('/api/login', {
 			method: 'POST',
 			body: JSON.stringify({ username, password })
@@ -1175,7 +1168,6 @@ async function autoLogin(username, password) {
 		}
 		await loadUserSettings();
 		
-		console.log('✓ Автоматический вход успешен:', currentUser);
 		updateUserBadge();
 		return true;
 	} catch (err) {
@@ -1555,7 +1547,6 @@ async function loadWaterSettings() {
 	try {
 		const settings = await apiCall('/api/water-settings');
 		waterSettings = settings;
-		console.log('✓ Загружены настройки воды:', waterSettings);
 		saveCache(CACHE_KEYS.waterSettings, waterSettings);
 		
 		// Показываем секцию воды только если вес установлен
@@ -1677,17 +1668,9 @@ function renderWaterLogs() {
 	const container = document.getElementById('waterLogsList');
 	if (!container) return;
 	
-	console.log('🔍 renderWaterLogs: начало рендеринга');
-	console.log('  waterLogs:', waterLogs);
-	console.log('  currentWaterLogsDate:', currentWaterLogsDate);
-	
 	// Получаем дату в локальном времени (без часов/минут)
 	const selectedDate = new Date(currentWaterLogsDate);
 	selectedDate.setHours(0, 0, 0, 0);
-	
-	console.log('🔍 Фильтрация логов воды:');
-	console.log('  Выбранный день (локальный):', selectedDate.toString());
-	console.log('  Всего логов:', waterLogs.length);
 	
 	// Для "сегодня" используем ту же логику, что и renderWaterProgress
 	let logsForDay;
@@ -1698,9 +1681,6 @@ function renderWaterLogs() {
 		// Для "сегодня" используем getLastWaterResetBoundary (как в progress bar)
 		const boundary = getLastWaterResetBoundary(waterSettings.reset_time);
 		logsForDay = waterLogs.filter(log => normalizeTimestamp(log.logged_at) >= boundary);
-		console.log(`  📍 Сегодня: используем reset_time = ${waterSettings.reset_time}`);
-		console.log(`  📍 boundary = ${new Date(boundary).toISOString()}`);
-		console.log(`  ✅ Найдено логов на сегодня (через boundary): ${logsForDay.length}`);
 	} else {
 		// Для прошлых дней используем то же reset_time, что и для "сегодня"
 		// selectedDate это КОНЕЦ дня (не начало)
@@ -1717,19 +1697,11 @@ function renderWaterLogs() {
 		const startTimestamp = startOfDay.getTime();
 		const endTimestamp = endOfDay.getTime();
 		
-		console.log(`  📍 Прошлый день: reset_time = ${waterSettings.reset_time}`);
-		console.log(`  📍 startOfDay = ${startOfDay.toISOString()} (${startTimestamp})`);
-		console.log(`  📍 endOfDay = ${endOfDay.toISOString()} (${endTimestamp})`);
-		
 		logsForDay = waterLogs.filter(log => {
 			const logTimestamp = new Date(log.logged_at).getTime();
 			const match = logTimestamp >= startTimestamp && logTimestamp < endTimestamp;
-			
-			console.log(`  🔍 ${log.drink_type} (${log.logged_at}): логTime=${logTimestamp} ${match ? '✅' : '❌'}`);
-			
 			return match;
 		});
-		console.log('  Найдено логов на этот день (по reset_time):', logsForDay.length);
 	}
 	
 	// Сортируем от новых к старым
@@ -2025,7 +1997,6 @@ function setupWaterChartTooltip(canvas) {
 	
 	// Если уже инициализировано, ничего не делаем
 	if (waterChartTooltipInitialized) {
-		console.log('✓ Tooltip уже инициализирован, пропускаем');
 		return;
 	}
 	
@@ -2052,7 +2023,6 @@ function setupWaterChartTooltip(canvas) {
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	`;
 	document.body.appendChild(tooltip);
-	console.log('✓ Tooltip элемент создан');
 	
 	// Обработчик движения мыши
 	canvas.addEventListener('mousemove', (e) => {
