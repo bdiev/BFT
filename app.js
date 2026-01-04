@@ -280,6 +280,10 @@ function buildWaterSeries(period, logs, resetTime = '00:00') {
 		.map(l => ({ ...l, ts: normalizeTimestamp(l.logged_at) }))
 		.filter(l => l.ts >= start && l.ts < end);
 
+	// Парсим reset_time
+	const resetHour = parseInt(resetTime.split(':')[0], 10);
+	const resetMin = parseInt(resetTime.split(':')[1] || '0', 10);
+
 	const series = [];
 	if (period === 'day') {
 		// Возвращаем как есть, но отсортировано
@@ -293,12 +297,20 @@ function buildWaterSeries(period, logs, resetTime = '00:00') {
 
 	if (period === 'week') {
 		for (let i = 0; i < 7; i++) {
+			// Начало дня = дата + reset_time
 			const dayStart = new Date(start);
 			dayStart.setDate(start.getDate() + i);
+			dayStart.setHours(resetHour, resetMin, 0, 0);
+			
+			// Конец дня = следующий день + reset_time
 			const dayEnd = new Date(dayStart);
 			dayEnd.setDate(dayStart.getDate() + 1);
+			
+			const dayStartTs = dayStart.getTime();
+			const dayEndTs = dayEnd.getTime();
+			
 			const total = filtered
-				.filter(l => l.ts >= dayStart && l.ts < dayEnd)
+				.filter(l => l.ts >= dayStartTs && l.ts < dayEndTs)
 				.reduce((s, l) => s + l.amount, 0);
 			series.push({ 
 				label: formatLocalDateTime(dayStart, { weekday: 'short' }), 
@@ -313,11 +325,19 @@ function buildWaterSeries(period, logs, resetTime = '00:00') {
 	if (period === 'month') {
 		let d = new Date(start);
 		while (d < end) {
+			// Начало дня = дата + reset_time
 			const dayStart = new Date(d);
+			dayStart.setHours(resetHour, resetMin, 0, 0);
+			
+			// Конец дня = следующий день + reset_time
 			const dayEnd = new Date(dayStart);
 			dayEnd.setDate(dayStart.getDate() + 1);
+			
+			const dayStartTs = dayStart.getTime();
+			const dayEndTs = dayEnd.getTime();
+			
 			const total = filtered
-				.filter(l => l.ts >= dayStart && l.ts < dayEnd)
+				.filter(l => l.ts >= dayStartTs && l.ts < dayEndTs)
 				.reduce((s, l) => s + l.amount, 0);
 			series.push({ 
 				label: formatLocalDateTime(dayStart, { day: '2-digit', month: 'short' }), 
