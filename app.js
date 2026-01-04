@@ -1754,9 +1754,12 @@ function renderWaterLogs() {
 
 async function addWaterLog(amount, drinkType = 'вода') {
 	try {
+		// Отправляем время с клиента чтобы избежать проблем с временной зоной сервера
+		const clientTime = new Date().toISOString();
+		
 		await apiCall('/api/water-logs', {
 			method: 'POST',
-			body: JSON.stringify({ amount, drink_type: drinkType })
+			body: JSON.stringify({ amount, drink_type: drinkType, logged_at: clientTime })
 		});
 		
 		// Обновляем локальный список

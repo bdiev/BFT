@@ -734,22 +734,25 @@ app.get('/api/water-logs', authenticateToken, (req, res) => {
 
 // Добавить лог воды
 app.post('/api/water-logs', authenticateToken, (req, res) => {
-  const { amount, drink_type } = req.body;
+  const { amount, drink_type, logged_at } = req.body;
   
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: 'Некорректное количество' });
   }
   
+  // Используем время с клиента если передано, иначе серверное
+  const finalLoggedAt = logged_at || new Date().toISOString();
+  
   db.run(
-    'INSERT INTO water_logs (user_id, amount, drink_type) VALUES (?, ?, ?)',
-    [req.userId, amount, drink_type || 'вода'],
+    'INSERT INTO water_logs (user_id, amount, drink_type, logged_at) VALUES (?, ?, ?, ?)',
+    [req.userId, amount, drink_type || 'вода', finalLoggedAt],
     function(err) {
       if (err) return res.status(500).json({ error: 'Ошибка сохранения' });
       const payload = {
         id: this.lastID,
         amount, 
         drink_type: drink_type || 'вода',
-        logged_at: new Date().toISOString()
+        logged_at: finalLoggedAt
       };
       res.json(payload);
       notifyUserUpdate(req.userId, 'waterAdded', payload);
