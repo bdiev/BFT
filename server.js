@@ -440,7 +440,8 @@ app.post('/api/user-settings', authenticateToken, (req, res) => {
     waterTracker: incoming.waterTracker !== false,
     waterChart: incoming.waterChart !== false,
     weightTracker: incoming.weightTracker !== false,
-    lastResult: incoming.lastResult !== false
+    lastResult: incoming.lastResult !== false,
+    restTimer: incoming.restTimer !== false
   };
 
   const cardOrder = req.body?.card_order || null;
