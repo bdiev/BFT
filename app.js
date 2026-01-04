@@ -3312,6 +3312,16 @@ document.getElementById('addWeightBtn')?.addEventListener('click', async () => {
 			await processOfflineQueue();
 		}
 		
+		// Логируем визит через API (для PWA и динамических загрузок)
+		try {
+			const visitRes = await fetch('/api/log-visit', { method: 'POST', credentials: 'include' });
+			if (visitRes.ok) {
+				console.log('✅ Визит залогирован на сервере');
+			}
+		} catch (err) {
+			console.error('⚠️ Не удалось залогировать визит:', err.message);
+		}
+		
 		console.log('✓ Инициализация завершена');
 		
 		// Периодическая синхронизация настроек карточек между устройствами

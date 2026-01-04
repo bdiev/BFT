@@ -1200,6 +1200,29 @@ app.get('/api/admin/debug-visits', requireAdmin, (req, res) => {
   });
 });
 
+// Публичный API для логирования посещения (для PWA и динамических загрузок)
+app.post('/api/log-visit', (req, res) => {
+  console.log('📍 API запрос на логирование посещения');
+  const token = req.cookies.token;
+  
+  if (token) {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (!err && user) {
+        console.log('   Логируем для user.id:', user.id);
+        logVisit(user.id, 0);
+      } else {
+        console.log('   JWT ошибка - логируем как анонимное');
+        logVisit(null, 1);
+      }
+      res.json({ success: true, message: 'Посещение залогировано' });
+    });
+  } else {
+    console.log('   Нет токена - логируем как анонимное');
+    logVisit(null, 1);
+    res.json({ success: true, message: 'Посещение залогировано' });
+  }
+});
+
 // Ручное логирование посещения (для отладки)
 app.post('/api/admin/test-visit', requireAdmin, (req, res) => {
   console.log('🧪 Тестовое логирование посещения...');
