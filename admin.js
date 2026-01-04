@@ -178,8 +178,7 @@ function renderUsersTable(users) {
 			<td>${user.gender === 'female' ? '♀️ Девушка' : '♂️ Парень'}</td>
 			<td>${user.email || '<span style="color: var(--text-muted);">нет</span>'}</td>
 			<td>${formatDate(user.created_at)}</td>
-			<td>${user.entries_count || 0}</td>
-			<td>${user.water_logs_count || 0}</td>
+			<td>${(user.entries_count || 0) + (user.water_logs_count || 0) + (user.weight_logs_count || 0)}</td>
 			<td>
 				<span class="user-role ${user.is_admin ? 'admin' : 'user'}">
 					${user.is_admin ? 'Админ' : 'Пользователь'}
@@ -228,12 +227,8 @@ function renderUsersTable(users) {
 					<span class="user-card-info-value">${formatDate(user.created_at)}</span>
 				</div>
 				<div class="user-card-info-row">
-					<span class="user-card-info-label">Записей:</span>
-					<span class="user-card-info-value">${user.entries_count || 0}</span>
-				</div>
-				<div class="user-card-info-row">
-					<span class="user-card-info-label">Логов воды:</span>
-					<span class="user-card-info-value">${user.water_logs_count || 0}</span>
+					<span class="user-card-info-label">Всего логов:</span>
+					<span class="user-card-info-value">${(user.entries_count || 0) + (user.water_logs_count || 0) + (user.weight_logs_count || 0)}</span>
 				</div>
 			</div>
 			

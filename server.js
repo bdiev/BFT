@@ -870,10 +870,12 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
       u.is_admin,
       u.created_at,
       COUNT(DISTINCT e.id) as entries_count,
-      COUNT(DISTINCT w.id) as water_logs_count
+      COUNT(DISTINCT w.id) as water_logs_count,
+      COUNT(DISTINCT wl.id) as weight_logs_count
     FROM users u
     LEFT JOIN entries e ON u.id = e.user_id
     LEFT JOIN water_logs w ON u.id = w.user_id
+    LEFT JOIN weight_logs wl ON u.id = wl.user_id
     GROUP BY u.id
     ORDER BY u.created_at DESC
   `;
