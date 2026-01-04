@@ -27,6 +27,13 @@ let waterChartTooltipInitialized = false; // Флаг инициализации
 let weightLogs = [];
 let currentWeightPeriod = 'month';
 
+// Состояние таймера отдыха
+let restTimerSeconds = 0;
+let restTimerRemaining = 0;
+let restTimerInterval = null;
+let restTimerRunning = false;
+let restTimerSound = null;
+
 const CACHE_KEYS = {
 	user: 'cache_user',
 	history: 'cache_history',
@@ -60,7 +67,8 @@ const defaultCardVisibility = () => ({
 	chart: true,
 	waterTracker: true,
 	waterChart: true,
-	weightTracker: true
+	weightTracker: true,
+	restTimer: true
 });
 
 const defaultCardOrder = () => [
@@ -69,7 +77,8 @@ const defaultCardOrder = () => [
 	'chart',
 	'waterTracker',
 	'waterChart',
-	'weightTracker'
+	'weightTracker',
+	'restTimer'
 ];
 
 let userSettings = {
@@ -417,7 +426,8 @@ const cardOrderNames = {
 	chart: 'График жира',
 	waterTracker: 'Трекер воды',
 	waterChart: 'График воды',
-	weightTracker: 'Трекер веса'
+	weightTracker: 'Трекер веса',
+	restTimer: 'Таймер отдыха'
 };
 
 function toggleCardElement(el, visible) {
@@ -433,6 +443,7 @@ function applyCardVisibility() {
 	toggleCardElement(document.getElementById('waterSection'), vis.waterTracker);
 	toggleCardElement(document.getElementById('waterChartSection'), vis.waterChart);
 	toggleCardElement(document.getElementById('weightSection'), vis.weightTracker);
+	toggleCardElement(document.getElementById('restTimerSection'), vis.restTimer);
 	applyCardOrder();
 }
 
@@ -444,7 +455,8 @@ function syncCardVisibilityUI() {
 		toggleChartCard: 'chart',
 		toggleWaterCard: 'waterTracker',
 		toggleWaterChartCard: 'waterChart',
-		toggleWeightCard: 'weightTracker'
+		toggleWeightCard: 'weightTracker',
+		toggleRestTimerCard: 'restTimer'
 	};
 	Object.entries(map).forEach(([id, key]) => {
 		const el = document.getElementById(id);
@@ -465,7 +477,8 @@ function applyCardOrder() {
 		chart: 'chart-section',
 		waterTracker: 'waterSection',
 		waterChart: 'waterChartSection',
-		weightTracker: 'weightSection'
+		weightTracker: 'weightSection',
+		restTimer: 'restTimerSection'
 	};
 
 	order.forEach((key) => {
@@ -3065,7 +3078,8 @@ const cardToggleMap = {
 	toggleChartCard: 'chart',
 	toggleWaterCard: 'waterTracker',
 	toggleWaterChartCard: 'waterChart',
-	toggleWeightCard: 'weightTracker'
+	toggleWeightCard: 'weightTracker',
+	toggleRestTimerCard: 'restTimer'
 };
 
 Object.entries(cardToggleMap).forEach(([id, key]) => {
@@ -3417,6 +3431,131 @@ settingsModal?.addEventListener('click', (e) => {
 	}
 });
 
+// ===== ТАЙМЕР ОТДЫХА =====
+function initRestTimer() {
+	// Создаём звук для таймера (бип)
+	restTimerSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjWM0fHUgzEHGmy57OihUBAJCQ==');
+
+	const presetBtns = document.querySelectorAll('.timer-preset-btn');
+	const startBtn = document.getElementById('startTimerBtn');
+	const stopBtn = document.getElementById('stopTimerBtn');
+	const timerDisplay = document.getElementById('timerDisplay');
+	const timerStatus = document.getElementById('timerStatus');
+
+	// Выбор времени
+	presetBtns.forEach(btn => {
+		btn.addEventListener('click', () => {
+			if (restTimerRunning) return;
+
+			restTimerSeconds = parseInt(btn.dataset.seconds);
+			restTimerRemaining = restTimerSeconds;
+			
+			// Подсветка выбранной кнопки
+			presetBtns.forEach(b => b.style.background = 'rgba(99, 102, 241, 0.1)');
+			btn.style.background = 'rgba(99, 102, 241, 0.25)';
+
+			updateTimerDisplay();
+			startBtn.disabled = false;
+			timerStatus.textContent = 'Готов к старту';
+		});
+	});
+
+	// Старт таймера
+	startBtn.addEventListener('click', () => {
+		if (restTimerRunning) {
+			// Пауза
+			clearInterval(restTimerInterval);
+			restTimerRunning = false;
+			startBtn.textContent = '▶️ Продолжить';
+			timerStatus.textContent = 'Пауза';
+		} else {
+			// Старт
+			restTimerRunning = true;
+			startBtn.textContent = '⏸️ Пауза';
+			stopBtn.disabled = false;
+			timerStatus.textContent = 'Идёт отдых...';
+
+			restTimerInterval = setInterval(() => {
+				restTimerRemaining--;
+				updateTimerDisplay();
+
+				if (restTimerRemaining <= 0) {
+					completeRestTimer();
+				}
+			}, 1000);
+		}
+	});
+
+	// Стоп таймера
+	stopBtn.addEventListener('click', () => {
+		resetRestTimer();
+		presetBtns.forEach(b => b.style.background = 'rgba(99, 102, 241, 0.1)');
+	});
+
+	// Запрос разрешения на уведомления
+	if ('Notification' in window && Notification.permission === 'default') {
+		Notification.requestPermission();
+	}
+}
+
+function updateTimerDisplay() {
+	const minutes = Math.floor(restTimerRemaining / 60);
+	const seconds = restTimerRemaining % 60;
+	const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+	document.getElementById('timerDisplay').textContent = display;
+
+	// Изменение цвета при завершении
+	const timerDisplay = document.getElementById('timerDisplay');
+	if (restTimerRemaining <= 5 && restTimerRemaining > 0) {
+		timerDisplay.style.color = '#f59e0b'; // Оранжевый
+	} else if (restTimerRemaining === 0) {
+		timerDisplay.style.color = '#10b981'; // Зелёный
+	} else {
+		timerDisplay.style.color = '#6366f1'; // Синий
+	}
+}
+
+function completeRestTimer() {
+	clearInterval(restTimerInterval);
+	restTimerRunning = false;
+
+	document.getElementById('timerStatus').textContent = '✅ Отдых завершён!';
+	document.getElementById('startTimerBtn').textContent = '▶️ Старт';
+
+	// Вибрация
+	if (navigator.vibrate) {
+		navigator.vibrate([200, 100, 200, 100, 200]);
+	}
+
+	// Звук
+	if (restTimerSound) {
+		restTimerSound.play().catch(() => {});
+	}
+
+	// Уведомление
+	if ('Notification' in window && Notification.permission === 'granted') {
+		new Notification('⏱️ Таймер завершён', {
+			body: 'Отдых закончен! Пора возвращаться к тренировке.',
+			icon: '/icons/icon-192.png',
+			badge: '/icons/icon-192.png',
+			vibrate: [200, 100, 200]
+		});
+	}
+}
+
+function resetRestTimer() {
+	clearInterval(restTimerInterval);
+	restTimerRunning = false;
+	restTimerRemaining = restTimerSeconds;
+	
+	updateTimerDisplay();
+	
+	document.getElementById('startTimerBtn').textContent = '▶️ Старт';
+	document.getElementById('startTimerBtn').disabled = false;
+	document.getElementById('stopTimerBtn').disabled = true;
+	document.getElementById('timerStatus').textContent = 'Готов к старту';
+}
+
 	// Резерв: если DOM уже готов, добавим класс для анимации входа
 	document.addEventListener('DOMContentLoaded', () => {
 		if (!document.body.classList.contains('page-ready')) {
@@ -3424,4 +3563,7 @@ settingsModal?.addEventListener('click', (e) => {
 				document.body.classList.add('page-ready');
 			});
 		}
+		
+		// Инициализация таймера отдыха
+		initRestTimer();
 	});

@@ -160,6 +160,8 @@
 							<input type="checkbox" id="toggleWaterChartCard" /> График воды
 						</label>					<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
 						<input type="checkbox" id="toggleWeightCard" /> Трекер веса
+					</label>					<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+						<input type="checkbox" id="toggleRestTimerCard" /> Таймер отдыха
 					</label>					</div>
 					<div id="cardOrderSection" style="margin-top: 14px; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 12px; background: rgba(99, 102, 241, 0.05);">
 						<h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 700;">Порядок карточек</h4>
@@ -332,6 +334,36 @@
 				</div>
 			</div>
 		</section>
+
+		<!-- СЕКЦИЯ ТАЙМЕРА ТРЕНИРОВОК -->
+		<section id="restTimerSection" class="card" style="display: none;">
+			<div style="margin-bottom: 20px;">
+				<strong>⏱️ Таймер отдыха</strong>
+				<p class="muted" style="margin:4px 0 0;">Отслеживай время отдыха между подходами</p>
+			</div>
+
+			<!-- Дисплей таймера -->
+			<div style="text-align: center; margin: 24px 0;">
+				<div id="timerDisplay" style="font-size: 72px; font-weight: 700; color: #6366f1; font-variant-numeric: tabular-nums; letter-spacing: -2px;">00:00</div>
+				<div id="timerStatus" style="font-size: 14px; color: #a5b4fc; margin-top: 8px;">Выбери время отдыха</div>
+			</div>
+
+			<!-- Кнопки выбора времени -->
+			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin-bottom: 16px;">
+				<button class="timer-preset-btn" data-seconds="60" style="padding: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #e0e7ff; font-weight: 600; cursor: pointer; transition: all 0.2s;">1:00</button>
+				<button class="timer-preset-btn" data-seconds="90" style="padding: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #e0e7ff; font-weight: 600; cursor: pointer; transition: all 0.2s;">1:30</button>
+				<button class="timer-preset-btn" data-seconds="120" style="padding: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #e0e7ff; font-weight: 600; cursor: pointer; transition: all 0.2s;">2:00</button>
+				<button class="timer-preset-btn" data-seconds="180" style="padding: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #e0e7ff; font-weight: 600; cursor: pointer; transition: all 0.2s;">3:00</button>
+				<button class="timer-preset-btn" data-seconds="240" style="padding: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #e0e7ff; font-weight: 600; cursor: pointer; transition: all 0.2s;">4:00</button>
+			</div>
+
+			<!-- Кнопки управления -->
+			<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+				<button id="startTimerBtn" class="primary" style="padding: 14px; border: none; cursor: pointer; font-weight: 600; border-radius: 10px; font-size: 16px;" disabled>▶️ Старт</button>
+				<button id="stopTimerBtn" style="padding: 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; cursor: pointer; font-weight: 600; border-radius: 10px; font-size: 16px;" disabled>⏹️ Стоп</button>
+			</div>
+		</section>
+		
 		<!-- СЕКЦИЯ ОТСЛЕЖИВАНИЯ ВОДЫ -->
 				<section id="waterSection" class="card" style="display: none;">
 			<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap; margin-bottom: 20px;">
