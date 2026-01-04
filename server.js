@@ -24,6 +24,25 @@ app.use(cookieParser());
 app.use((req, res, next) => {
   console.log(`\n📨 ${req.method} ${req.path} from ${req.ip}`);
   console.log('   Cookies:', Object.keys(req.cookies).length ? req.cookies : 'нет');
+  
+  // Логируем посещение главной страницы асинхронно
+  if (req.method === 'GET' && req.path === '/') {
+    setImmediate(() => {
+      const token = req.cookies.token;
+      if (token) {
+        jwt.verify(token, JWT_SECRET, (err, user) => {
+          if (!err && user) {
+            logVisit(user.id, 0);
+          } else {
+            logVisit(null, 1);
+          }
+        });
+      } else {
+        logVisit(null, 1);
+      }
+    });
+  }
+  
   next();
 });
 
@@ -953,21 +972,6 @@ function logVisit(userId = null, isAnonymous = true) {
 
 // Возвращаем фронт
 app.get('/', (req, res) => {
-  // Логируем посещение
-  const token = req.cookies.token;
-  if (token) {
-    // Если пользователь авторизован, логируем как зарегистрированное посещение
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-      if (!err && user) {
-        logVisit(user.id, 0); // 0 = не анонимное
-      } else {
-        logVisit(null, 1); // 1 = анонимное
-      }
-    });
-  } else {
-    logVisit(null, 1); // анонимное посещение
-  }
-  
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
