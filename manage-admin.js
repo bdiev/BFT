@@ -6,10 +6,12 @@
  *   node manage-admin.js deop <username>  - забрать права админа
  */
 
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const http = require('http');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.db');
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
+const SECRET = process.env.INTERNAL_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
 const command = process.argv[2];
 const username = process.argv[3];
 
@@ -20,78 +22,85 @@ if (!command || !username) {
   process.exit(1);
 }
 
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) {
-    console.error('❌ Ошибка подключения к БД:', err.message);
+function makeRequest(endpoint, data) {
+  const postData = JSON.stringify(data);
+  
+  const options = {
+    hostname: HOST,
+    port: PORT,
+    path: endpoint,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData)
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = http.request(options, (res) => {
+      let responseData = '';
+
+      res.on('data', (chunk) => {
+        responseData += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(responseData);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            reject(new Error(parsed.error || `HTTP ${res.statusCode}`));
+          }
+        } catch (e) {
+          reject(new Error('Ошибка парсинга ответа'));
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      reject(e);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
+async function main() {
+  try {
+    let result;
+    
+    if (command === 'op') {
+      result = await makeRequest('/api/internal/admin/grant', { 
+        username, 
+        secret: SECRET 
+      });
+      console.log(`✅ ${result.message}`);
+      console.log(`   Пользователь: ${result.username}`);
+      console.log(`   ID: ${result.userId}`);
+      console.log(`   🔔 WebSocket уведомление отправлено`);
+    } else if (command === 'deop') {
+      result = await makeRequest('/api/internal/admin/revoke', { 
+        username, 
+        secret: SECRET 
+      });
+      console.log(`✅ ${result.message}`);
+      console.log(`   Пользователь: ${result.username}`);
+      console.log(`   ID: ${result.userId}`);
+      console.log(`   🔔 WebSocket уведомление отправлено`);
+    } else {
+      console.log(`❌ Неизвестная команда: "${command}"`);
+      console.log('   Доступные команды: op, deop');
+      process.exit(1);
+    }
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Ошибка:', error.message);
+    console.error('   Убедись что сервер запущен на', `${HOST}:${PORT}`);
     process.exit(1);
   }
-});
-
-if (command === 'op') {
-  // Дать права администратора
-  db.get('SELECT id, username, is_admin FROM users WHERE username = ?', [username], (err, user) => {
-    if (err) {
-      console.log('❌ Ошибка БД:', err.message);
-      db.close();
-      process.exit(1);
-    }
-    if (!user) {
-      console.log(`❌ Пользователь "${username}" не найден`);
-      db.close();
-      process.exit(1);
-    }
-    if (user.is_admin) {
-      console.log(`⚠️  Пользователь "${username}" уже является администратором`);
-      db.close();
-      process.exit(0);
-    }
-
-    db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], function(err) {
-      if (err) {
-        console.log('❌ Ошибка обновления:', err.message);
-        db.close();
-        process.exit(1);
-      }
-      console.log(`✅ Пользователь "${username}" получил права администратора`);
-      console.log(`   ID: ${user.id}`);
-      db.close();
-      process.exit(0);
-    });
-  });
-} else if (command === 'deop') {
-  // Забрать права администратора
-  db.get('SELECT id, username, is_admin FROM users WHERE username = ?', [username], (err, user) => {
-    if (err) {
-      console.log('❌ Ошибка БД:', err.message);
-      db.close();
-      process.exit(1);
-    }
-    if (!user) {
-      console.log(`❌ Пользователь "${username}" не найден`);
-      db.close();
-      process.exit(1);
-    }
-    if (!user.is_admin) {
-      console.log(`⚠️  Пользователь "${username}" не является администратором`);
-      db.close();
-      process.exit(0);
-    }
-
-    db.run('UPDATE users SET is_admin = 0 WHERE id = ?', [user.id], function(err) {
-      if (err) {
-        console.log('❌ Ошибка обновления:', err.message);
-        db.close();
-        process.exit(1);
-      }
-      console.log(`✅ У пользователя "${username}" забраны права администратора`);
-      console.log(`   ID: ${user.id}`);
-      db.close();
-      process.exit(0);
-    });
-  });
-} else {
-  console.log(`❌ Неизвестная команда: "${command}"`);
-  console.log('   Доступные команды: op, deop');
-  db.close();
-  process.exit(1);
 }
+
+main();

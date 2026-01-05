@@ -1325,6 +1325,101 @@ app.get('/api/admin/check', authenticateToken, (req, res) => {
   });
 });
 
+// API для управления правами администратора (без авторизации, для внутренних скриптов)
+app.post('/api/internal/admin/grant', (req, res) => {
+  const { username, secret } = req.body;
+  
+  // Простая защита: требуем секретный ключ
+  const INTERNAL_SECRET = process.env.INTERNAL_SECRET || JWT_SECRET;
+  if (secret !== INTERNAL_SECRET) {
+    return res.status(403).json({ error: 'Доступ запрещен' });
+  }
+  
+  if (!username) {
+    return res.status(400).json({ error: 'Username обязателен' });
+  }
+  
+  db.get('SELECT id, username, is_admin FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Ошибка БД' });
+    }
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    if (user.is_admin) {
+      return res.json({ message: 'Пользователь уже является администратором', userId: user.id });
+    }
+    
+    db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Ошибка обновления' });
+      }
+      
+      console.log(`✅ API: Пользователь "${username}" получил права администратора`);
+      
+      // Отправляем WebSocket уведомление
+      notifyUserUpdate(user.id, 'adminRightsGranted', { 
+        message: '🎉 Вам предоставлены права администратора!',
+        isAdmin: true 
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Права администратора выданы',
+        userId: user.id,
+        username: user.username
+      });
+    });
+  });
+});
+
+app.post('/api/internal/admin/revoke', (req, res) => {
+  const { username, secret } = req.body;
+  
+  // Простая защита: требуем секретный ключ
+  const INTERNAL_SECRET = process.env.INTERNAL_SECRET || JWT_SECRET;
+  if (secret !== INTERNAL_SECRET) {
+    return res.status(403).json({ error: 'Доступ запрещен' });
+  }
+  
+  if (!username) {
+    return res.status(400).json({ error: 'Username обязателен' });
+  }
+  
+  db.get('SELECT id, username, is_admin FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Ошибка БД' });
+    }
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    if (!user.is_admin) {
+      return res.json({ message: 'Пользователь не является администратором', userId: user.id });
+    }
+    
+    db.run('UPDATE users SET is_admin = 0 WHERE id = ?', [user.id], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Ошибка обновления' });
+      }
+      
+      console.log(`✅ API: У пользователя "${username}" забраны права администратора`);
+      
+      // Отправляем WebSocket уведомление
+      notifyUserUpdate(user.id, 'adminRightsRevoked', { 
+        message: '⚠️ Ваши права администратора были отозваны',
+        isAdmin: false 
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Права администратора отозваны',
+        userId: user.id,
+        username: user.username
+      });
+    });
+  });
+});
+
 // ===== КОНЕЦ АДМИН ПАНЕЛЬ API =====
 
 
