@@ -948,7 +948,7 @@ const historyCount = document.getElementById('history-count');
 const currentResult = document.getElementById('current-result');
 const currentNote = document.getElementById('current-note');
 const chart = document.getElementById('chart');
-const ctx = chart.getContext('2d');
+const ctx = chart ? chart.getContext('2d') : null;
 const userSelect = document.getElementById('userSelect');
 const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
@@ -2737,6 +2737,8 @@ async function deleteEntry(id) {
 
 function renderHistory() {
 	console.log('🎨 Рендерим историю. Authenticated:', authenticated, 'User:', currentUser, 'История:', history);
+	// Если элементы истории отсутствуют (например, на лендинге), просто выходим
+	if (!historyList || !historyCount) return;
 	if (!authenticated || !currentUser) {
 		historyList.innerHTML = '<p class="muted">Войди, чтобы увидеть свой прогресс</p>';
 		historyCount.textContent = '0 записей';
@@ -2846,6 +2848,7 @@ async function clearHistory() {
 
 // ===== ГРАФИК =====
 function resizeCanvas() {
+	if (!chart || !ctx) return;
 	const dpr = window.devicePixelRatio || 1;
 	const { width } = chart.getBoundingClientRect();
 	chart.width = Math.max(320, Math.round(width * dpr));
@@ -2863,6 +2866,7 @@ function initCanvasSize() {
 }
 
 function drawChart() {
+	if (!chart || !ctx) return;
 	const ordered = [...history].sort((a, b) => a.timestamp - b.timestamp);
 	const entries = ordered.slice(Math.max(0, ordered.length - maxPoints));
 	ctx.clearRect(0, 0, viewW, viewH);
