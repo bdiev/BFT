@@ -948,7 +948,7 @@ const historyCount = document.getElementById('history-count');
 const currentResult = document.getElementById('current-result');
 const currentNote = document.getElementById('current-note');
 const chart = document.getElementById('chart');
-const ctx = chart ? chart.getContext('2d') : null;
+const ctx = chart.getContext('2d');
 const userSelect = document.getElementById('userSelect');
 const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
@@ -1028,6 +1028,7 @@ function updateUserBadge() {
 		const loginForm = document.getElementById('loginForm');
 		const modalTitle = document.getElementById('modalTitle');
 		const landingPage = document.getElementById('landingPage');
+		const appContent = document.getElementById('appContent');
 		const mainHeader = document.getElementById('mainHeader');
 		const userAccountBtn = document.getElementById('userAccountBtn');
 		const settingsBtn = document.getElementById('settingsBtn');
@@ -1037,24 +1038,17 @@ function updateUserBadge() {
 		const adminPanelBtn = document.getElementById('adminPanelBtn');
 		
 		if (authenticated && currentUser) {
-			// Редирект на main.html только если мы на landing page
-			if (landingPage && window.location.pathname === '/' || window.location.pathname === '/index.html') {
-				window.location.href = '/main.html';
-				return;
-			}
-			
-			// На других страницах просто скрываем landing и показываем header
-			if (landingPage) landingPage.style.display = 'none';
-			if (mainHeader) mainHeader.style.display = 'flex';
+			// Скрываем landing page, показываем приложение
+			landingPage.style.display = 'none';
+			appContent.style.display = 'block';
+			mainHeader.style.display = 'flex';
 			
 			// Показываем кнопки аккаунта и настроек
-			if (userAccountBtn) {
-				userAccountBtn.textContent = '👤 ' + currentUser;
-				userAccountBtn.style.display = 'inline-flex';
-			}
-			if (settingsBtn) settingsBtn.style.display = 'inline-flex';
-			if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-			if (openAuthModal) openAuthModal.style.display = 'none';
+		userAccountBtn.textContent = '👤 ' + currentUser;
+		userAccountBtn.style.display = 'inline-flex';
+		settingsBtn.style.display = 'inline-flex';
+		logoutBtn.style.display = 'inline-flex';
+		openAuthModal.style.display = 'none';
 		
 		// Обновляем имя в модале аккаунта
 		if (accountDisplayName) {
@@ -1073,22 +1067,17 @@ function updateUserBadge() {
 				adminPanelBtn.style.display = 'none';
 			}
 			
-			if (typeof loginBtn !== 'undefined' && loginBtn) loginBtn.style.display = 'none';
-			if (typeof toggleSignupBtn !== 'undefined' && toggleSignupBtn) toggleSignupBtn.style.display = 'none';
+			loginBtn.style.display = 'none';
+			toggleSignupBtn.style.display = 'none';
 		} else {
-			// Редирект на / если не авторизован и не на landing странице
-			if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-				window.location.href = '/';
-				return;
-			}
+			// Показываем landing page, скрываем приложение
+			landingPage.style.display = 'block';
+			appContent.style.display = 'none';
+			mainHeader.style.display = 'none';
 			
-			// Показываем landing page, скрываем header
-			if (landingPage) landingPage.style.display = 'block';
-			if (mainHeader) mainHeader.style.display = 'none';
-			
-			if (userAccountBtn) userAccountBtn.style.display = 'none';
-			if (settingsBtn) settingsBtn.style.display = 'none';
-			if (logoutBtn) logoutBtn.style.display = 'none';
+			userAccountBtn.style.display = 'none';
+			settingsBtn.style.display = 'none';
+			logoutBtn.style.display = 'none';
 			openAuthModal.style.display = '';
 			loginForm.style.display = 'block';
 			signupForm.style.display = 'none';
@@ -2737,8 +2726,6 @@ async function deleteEntry(id) {
 
 function renderHistory() {
 	console.log('🎨 Рендерим историю. Authenticated:', authenticated, 'User:', currentUser, 'История:', history);
-	// Если элементы истории отсутствуют (например, на лендинге), просто выходим
-	if (!historyList || !historyCount) return;
 	if (!authenticated || !currentUser) {
 		historyList.innerHTML = '<p class="muted">Войди, чтобы увидеть свой прогресс</p>';
 		historyCount.textContent = '0 записей';
@@ -2848,7 +2835,6 @@ async function clearHistory() {
 
 // ===== ГРАФИК =====
 function resizeCanvas() {
-	if (!chart || !ctx) return;
 	const dpr = window.devicePixelRatio || 1;
 	const { width } = chart.getBoundingClientRect();
 	chart.width = Math.max(320, Math.round(width * dpr));
@@ -2866,7 +2852,6 @@ function initCanvasSize() {
 }
 
 function drawChart() {
-	if (!chart || !ctx) return;
 	const ordered = [...history].sort((a, b) => a.timestamp - b.timestamp);
 	const entries = ordered.slice(Math.max(0, ordered.length - maxPoints));
 	ctx.clearRect(0, 0, viewW, viewH);
@@ -3407,8 +3392,10 @@ document.getElementById('addWeightBtn')?.addEventListener('click', async () => {
 				document.body.classList.add('page-ready');
 				if (!authenticated) {
 					const landing = document.getElementById('landingPage');
+					const appContent = document.getElementById('appContent');
 					const mainHeader = document.getElementById('mainHeader');
 					landing && (landing.style.display = 'block');
+					appContent && (appContent.style.display = 'none');
 					mainHeader && (mainHeader.style.display = 'none');
 				}
 			});
