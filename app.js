@@ -19,7 +19,7 @@ let waterLogs = [];
 let currentWaterPeriod = 'day';
 let currentWaterChartPeriod = 'day';
 let waterChartData = [];
-let currentWaterLogsDate = startOfTodayLocal(); // Текущий выбранный день для логов, привязан к полуночной границе
+let currentWaterLogsDate = null; // Текущий выбранный день для логов (инициализируется после загрузки настроек)
 let waterChartPoints = []; // Координаты точек для hover
 let waterChartTooltipInitialized = false; // Флаг инициализации tooltip
 
@@ -222,6 +222,25 @@ function getLastWaterResetBoundary(resetTime = '00:00') {
 		boundary.setDate(boundary.getDate() - 1);
 	}
 	return boundary;
+}
+
+// Возвращает "сегодняшнюю" дату в формате 00:00 с учётом reset_time
+// Если сейчас ДО времени сброса, то "сегодня" это вчерашняя календарная дата
+function getTodayByResetTime(resetTime = '00:00') {
+	const [hh, mm] = (resetTime || '00:00').split(':').map(v => parseInt(v, 10) || 0);
+	const now = new Date();
+	const resetBoundary = new Date(now);
+	resetBoundary.setHours(hh, mm, 0, 0);
+	
+	const todayMidnight = new Date(now);
+	todayMidnight.setHours(0, 0, 0, 0);
+	
+	// Если сейчас ДО времени сброса, то "логический сегодня" начался вчера
+	if (now < resetBoundary) {
+		todayMidnight.setDate(todayMidnight.getDate() - 1);
+	}
+	
+	return todayMidnight;
 }
 
 function getPeriodBoundary(period = 'day') {
@@ -1596,6 +1615,11 @@ async function loadWaterSettings() {
 		waterSettings = settings;
 		saveCache(CACHE_KEYS.waterSettings, waterSettings);
 		
+		// Инициализируем currentWaterLogsDate с учётом reset_time
+		if (!currentWaterLogsDate) {
+			currentWaterLogsDate = getTodayByResetTime(waterSettings.reset_time);
+		}
+		
 		// Показываем секцию воды только если вес установлен
 		const waterSection = document.getElementById('waterSection');
 		if (waterSettings.weight && waterSettings.weight > 0) {
@@ -1609,6 +1633,10 @@ async function loadWaterSettings() {
 		const cached = loadCache(CACHE_KEYS.waterSettings);
 		if (!navigator.onLine && cached) {
 			waterSettings = cached;
+			// Инициализируем currentWaterLogsDate с учётом reset_time
+			if (!currentWaterLogsDate) {
+				currentWaterLogsDate = getTodayByResetTime(waterSettings.reset_time);
+			}
 			renderWaterQuickButtons();
 			const waterSection = document.getElementById('waterSection');
 			if (waterSettings.weight && waterSettings.weight > 0) waterSection.style.display = 'block';
@@ -1719,42 +1747,27 @@ function renderWaterLogs() {
 	const selectedDate = new Date(currentWaterLogsDate);
 	selectedDate.setHours(0, 0, 0, 0);
 	
-	// Для "сегодня" используем ту же логику, что и renderWaterProgress
-	let logsForDay;
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+	// Определяем "логический сегодня" с учётом reset_time
+	const todayByResetTime = getTodayByResetTime(waterSettings.reset_time);
 	
-	if (selectedDate.getTime() === today.getTime()) {
-		// Для "сегодня" используем getLastWaterResetBoundary (как в progress bar)
-		const boundary = getLastWaterResetBoundary(waterSettings.reset_time);
-		
-		// Конец периода для "сегодня" = следующая граница сброса (завтра в reset_time)
-		const nextBoundary = new Date(boundary);
-		nextBoundary.setDate(nextBoundary.getDate() + 1);
-		
-		logsForDay = waterLogs.filter(log => {
-			const logTs = normalizeTimestamp(log.logged_at).getTime();
-			return logTs >= boundary.getTime() && logTs < nextBoundary.getTime();
-		});
-	} else {
-		// Для прошлых дней используем ту же границу reset_time, но сам день берём от выбранной даты
-		const dayStart = new Date(selectedDate);
-		const resetHour = parseInt(waterSettings.reset_time.split(':')[0], 10);
-		const resetMin = parseInt(waterSettings.reset_time.split(':')[1] || '0', 10);
-		dayStart.setHours(resetHour, resetMin, 0, 0);
-		
-		const dayEnd = new Date(dayStart);
-		dayEnd.setDate(dayEnd.getDate() + 1);
-		
-		const startTimestamp = dayStart.getTime();
-		const endTimestamp = dayEnd.getTime();
-		
-		logsForDay = waterLogs.filter(log => {
-			const logTimestamp = normalizeTimestamp(log.logged_at).getTime();
-			const match = logTimestamp >= startTimestamp && logTimestamp < endTimestamp;
-			return match;
-		});
-	}
+	// Для ЛЮБОГО дня (включая сегодня) используем единую логику:
+	// день начинается в selectedDate + reset_time и длится 24 часа
+	const resetHour = parseInt(waterSettings.reset_time.split(':')[0], 10);
+	const resetMin = parseInt(waterSettings.reset_time.split(':')[1] || '0', 10);
+	
+	const dayStart = new Date(selectedDate);
+	dayStart.setHours(resetHour, resetMin, 0, 0);
+	
+	const dayEnd = new Date(dayStart);
+	dayEnd.setDate(dayEnd.getDate() + 1);
+	
+	const startTimestamp = dayStart.getTime();
+	const endTimestamp = dayEnd.getTime();
+	
+	const logsForDay = waterLogs.filter(log => {
+		const logTimestamp = normalizeTimestamp(log.logged_at).getTime();
+		return logTimestamp >= startTimestamp && logTimestamp < endTimestamp;
+	});
 	
 	// Сортируем от новых к старым
 	const sorted = logsForDay.sort((a, b) => 
@@ -1766,10 +1779,10 @@ function renderWaterLogs() {
 	const totalDisplay = document.getElementById('waterLogsTotal');
 	
 	if (dateDisplay) {
-		if (selectedDate.getTime() === today.getTime()) {
+		if (selectedDate.getTime() === todayByResetTime.getTime()) {
 			dateDisplay.textContent = 'Сегодня';
 		} else {
-			const yesterday = new Date(today);
+			const yesterday = new Date(todayByResetTime);
 			yesterday.setDate(yesterday.getDate() - 1);
 			
 			if (selectedDate.getTime() === yesterday.getTime()) {
@@ -3152,15 +3165,14 @@ document.getElementById('waterLogsPrevBtn')?.addEventListener('click', () => {
 });
 
 document.getElementById('waterLogsNextBtn')?.addEventListener('click', () => {
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+	const todayByResetTime = getTodayByResetTime(waterSettings.reset_time);
 	
 	const selectedDate = new Date(currentWaterLogsDate);
 	selectedDate.setHours(0, 0, 0, 0);
 	selectedDate.setDate(selectedDate.getDate() + 1);
 	
-	// Не даём перейти дальше чем на сегодня
-	if (selectedDate.getTime() <= today.getTime()) {
+	// Не даём перейти дальше чем на логический сегодня (с учётом reset_time)
+	if (selectedDate.getTime() <= todayByResetTime.getTime()) {
 		currentWaterLogsDate = selectedDate;
 		renderWaterLogs();
 	}
