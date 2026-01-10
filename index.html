@@ -359,15 +359,6 @@
 			<canvas id="chart" height="280"></canvas>
 		</section>
 
-		<!-- Bottom Navigation (mobile) -->
-		<nav class="bottom-nav" aria-label="Основная навигация">
-			<div class="nav-items">
-				<button id="navHomeBtn" type="button">🏠 Домой</button>
-				<button id="navFormBtn" type="button">🧮 Форма</button>
-				<button id="navWeightBtn" type="button">⚖️ Вес</button>
-				<button id="navSettingsBtn" type="button">⚙️ Настройки</button>
-			</div>
-		</nav>
 		<!-- СЕКЦИЯ ТРЕКЕРА ВЕСА -->
 				<section id="weightSection" class="card">
 			<div style="display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -513,27 +504,6 @@
 		</section>
 	</div>
 
-	<script>
-	// Bottom nav actions: smooth-scroll to sections and open settings
-	(function(){
-	  function scrollToEl(id){
-	    var el = document.getElementById(id);
-	    if (!el) return;
-	    try { el.scrollIntoView({behavior:'smooth', block:'start'}); } catch(e){ window.location.hash = '#'+id; }
-	  }
-	  var homeBtn = document.getElementById('navHomeBtn');
-	  var formBtn = document.getElementById('navFormBtn');
-	  var weightBtn = document.getElementById('navWeightBtn');
-	  var settingsBtn = document.getElementById('navSettingsBtn');
-	  if (homeBtn) homeBtn.addEventListener('click', function(){ scrollToEl('mainHeader'); });
-	  if (formBtn) formBtn.addEventListener('click', function(){ scrollToEl('form-card'); });
-	  if (weightBtn) weightBtn.addEventListener('click', function(){ scrollToEl('weightSection'); });
-	  if (settingsBtn) settingsBtn.addEventListener('click', function(){
-	    var hdrBtn = document.getElementById('settingsBtn');
-	    if (hdrBtn) hdrBtn.click();
-	  });
-	})();
-	</script>
 	<!-- Footer -->
 	<footer class="site-footer">
 		<div class="footer-content">

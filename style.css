@@ -508,43 +508,6 @@ input:focus, select:focus {
 	transform: translateY(-2px);
 }
 
-/* Bottom Navigation (mobile) */
-.bottom-nav {
-	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 1000;
-	display: none;
-	backdrop-filter: blur(20px) saturate(160%);
-	background: rgba(20, 24, 34, 0.55);
-	border-top: 1px solid rgba(255, 255, 255, 0.12);
-	box-shadow: 0 -12px 30px rgba(0,0,0,0.35);
-	padding: env(safe-area-inset-bottom) 12px 12px;
-}
-.bottom-nav .nav-items {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 8px;
-	max-width: 640px;
-	margin: 0 auto;
-}
-.bottom-nav button {
-	border: 1px solid rgba(255, 255, 255, 0.14);
-	background: rgba(255, 255, 255, 0.06);
-	color: var(--text-dark);
-	border-radius: 14px;
-	padding: 10px 8px;
-	font-weight: 700;
-	font-size: 12px;
-}
-
-@media (max-width: 768px) {
-	.bottom-nav { display: block; }
-	body { padding-bottom: 88px; }
-}
-
-.ghost:active { 
 	transform: translateY(0); 
 }
 
