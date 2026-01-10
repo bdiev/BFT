@@ -1876,26 +1876,22 @@ input:-ms-input-placeholder {
 
 /* Плавающая кнопка CTA */
 #landingLoginBtn {
-	position: fixed;
-	bottom: 24px;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 500;
+	z-index: 1000;
 	max-width: 90vw;
 	width: auto;
 	box-shadow: 0 20px 50px rgba(91, 33, 182, 0.4);
 	transition: all var(--transition-normal) cubic-bezier(0.23, 1, 0.320, 1);
-	animation: floatingBtnShow var(--transition-slow) ease forwards;
 	padding: 20px 48px;
 	font-size: 20px;
 	white-space: nowrap;
 }
 
 #landingLoginBtn.floating {
-	bottom: 24px;
 	position: fixed;
+	bottom: 24px;
 	left: 50%;
 	transform: translateX(-50%);
+	animation: floatingBtnShow var(--transition-slow) ease forwards;
 }
 
 #landingLoginBtn.anchored {
@@ -1903,10 +1899,10 @@ input:-ms-input-placeholder {
 	bottom: auto;
 	left: auto;
 	transform: none;
-	max-width: 100%;
-	margin: 16px 0 0 0;
-	animation: none;
-	width: 100%;
+	max-width: 90vw;
+	margin: 16px auto 0 auto;
+	width: auto;
+	display: block;
 }
 
 @keyframes floatingBtnShow {
