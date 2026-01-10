@@ -1,9 +1,12 @@
-const CACHE = 'bf-tracker-v3';
+const CACHE = 'bf-tracker-v4';
 const BASE = self.registration.scope; // works even if app is served from subpath
 const ASSETS = [
   'index.html',
+  'admin.html',
   'style.css',
+  'admin-style.css',
   'app.js',
+  'admin.js',
   'manifest.json',
   'service-worker.js',
   'icons/icon-192.svg',
@@ -32,9 +35,16 @@ self.addEventListener('fetch', event => {
 
   // Навигационные запросы: возвращаем закэшированный index.html
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match(new URL('index.html', BASE).toString()).then(cached => cached || fetch(event.request))
-    );
+    // Если идём на админку — пробуем сеть, иначе SPA index.html
+    if (url.pathname.endsWith('/admin.html')) {
+      event.respondWith(
+        fetch(event.request).catch(() => caches.match(new URL('admin.html', BASE).toString()))
+      );
+    } else {
+      event.respondWith(
+        caches.match(new URL('index.html', BASE).toString()).then(cached => cached || fetch(event.request))
+      );
+    }
     return;
   }
 
