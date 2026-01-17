@@ -306,7 +306,7 @@ function sortUsers(field) {
 		} else if (field === 'is_admin') {
 			aVal = aVal ? 1 : 0;
 			bVal = bVal ? 1 : 0;
-		} else if (field === 'entries_count' || field === 'water_logs_count') {
+		} else if (field === 'entries_count' || field === 'water_logs_count' || field === 'total_logs') {
 			aVal = aVal || 0;
 			bVal = bVal || 0;
 		}
