@@ -306,7 +306,11 @@ function sortUsers(field) {
 		} else if (field === 'is_admin') {
 			aVal = aVal ? 1 : 0;
 			bVal = bVal ? 1 : 0;
-		} else if (field === 'entries_count' || field === 'water_logs_count' || field === 'total_logs') {
+		} else if (field === 'total_logs') {
+			// Вычисляем общее количество логов
+			aVal = (a.entries_count || 0) + (a.water_logs_count || 0) + (a.weight_logs_count || 0);
+			bVal = (b.entries_count || 0) + (b.water_logs_count || 0) + (b.weight_logs_count || 0);
+		} else if (field === 'entries_count' || field === 'water_logs_count') {
 			aVal = aVal || 0;
 			bVal = bVal || 0;
 		}
