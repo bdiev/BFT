@@ -311,6 +311,34 @@ db.serialize(() => {
     else console.log('✓ Таблица support_messages готова');
   });
 
+  // Миграция: добавляем missing columns в support_tickets если их нет
+  setTimeout(() => {
+    db.all("PRAGMA table_info(support_tickets)", (err, columns) => {
+      if (err) {
+        console.error('Ошибка проверки структуры support_tickets:', err);
+        return;
+      }
+      
+      if (columns && columns.length > 0) {
+        const hasClosedByAdminId = columns.some(col => col.name === 'closed_by_admin_id');
+        
+        if (!hasClosedByAdminId) {
+          console.log('Миграция: добавляем поле closed_by_admin_id в support_tickets...');
+          db.run(
+            "ALTER TABLE support_tickets ADD COLUMN closed_by_admin_id INTEGER",
+            (err) => {
+              if (err && !err.message.includes('duplicate column')) {
+                console.error('Ошибка миграции closed_by_admin_id:', err);
+              } else if (!err) {
+                console.log('✓ Поле closed_by_admin_id добавлено');
+              }
+            }
+          );
+        }
+      }
+    });
+  }, 500);
+
   // Проверяем, существует ли таблица visits и её структура
   setTimeout(() => {
     db.all("PRAGMA table_info(visits)", (err, columns) => {
@@ -1257,6 +1285,22 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
         console.error('❌ Ошибка создания support_messages:', err);
       }
     });
+
+    // Миграция: добавляем closed_by_admin_id если его нет
+    db.all("PRAGMA table_info(support_tickets)", (err, columns) => {
+      if (!err && columns) {
+        const hasClosedByAdminId = columns.some(col => col.name === 'closed_by_admin_id');
+        if (!hasClosedByAdminId) {
+          db.run("ALTER TABLE support_tickets ADD COLUMN closed_by_admin_id INTEGER", (err) => {
+            if (err && !err.message.includes('duplicate column')) {
+              console.error('Ошибка добавления closed_by_admin_id:', err);
+            } else if (!err) {
+              console.log('✓ Миграция: добавлено closed_by_admin_id');
+            }
+          });
+        }
+      }
+    });
   };
 
   createTablesIfNeeded();
@@ -1271,7 +1315,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
       t.status, 
       t.created_at, 
       t.updated_at,
-      t.closed_by_admin_id
+      COALESCE(t.closed_by_admin_id, NULL) as closed_by_admin_id
     FROM support_tickets t
     LEFT JOIN users u ON u.id = t.user_id
     ORDER BY t.updated_at DESC
@@ -1287,7 +1331,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
     if (rows && rows.length > 0) {
       // Асинхронно добавляем информацию о последнем сообщении и админе-закрывателе
       let completed = 0;
-      rows.forEach((ticket, index) => {
+      rows.forEach((ticket) => {
         // Получаем последнее сообщение
         db.get(
           `SELECT message, sender_role FROM support_messages 
