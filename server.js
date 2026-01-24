@@ -1086,7 +1086,7 @@ app.post('/api/support/tickets', authenticateToken, (req, res) => {
         (msgErr) => {
           if (msgErr) return res.status(500).json({ error: 'Тикет создан, но сообщение не сохранено' });
           notifyAdmins('ticketUpdate', { ticketId, userId: req.userId, subject });
-          res.json({ ticketId, status: 'open', subject });
+          res.json({ id: ticketId, ticketId, status: 'open', subject });
         }
       );
     }

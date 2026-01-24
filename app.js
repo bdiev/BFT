@@ -201,6 +201,13 @@ window.addEventListener('offline', () => {
 });
 
 // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ДАТЫ/ВРЕМЕНИ =====
+function escapeHtml(text) {
+	if (!text) return '';
+	const div = document.createElement('div');
+	div.textContent = text;
+	return div.innerHTML;
+}
+
 function formatLocalDateTime(timestamp, options = {}) {
 	const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	return new Date(timestamp).toLocaleString('ru-RU', { timeZone, ...options });
@@ -1226,13 +1233,16 @@ async function createSupportTicket() {
 	}
 	try {
 		setSupportStatus('⏳ Отправляю...', 'info');
-		await apiCall('/api/support/tickets', {
+		const newTicket = await apiCall('/api/support/tickets', {
 			method: 'POST',
 			body: JSON.stringify({ subject, message })
 		});
 		supportSubjectInput.value = '';
 		supportMessageInput.value = '';
 		await loadUserTickets();
+		if (newTicket?.id) {
+			await selectSupportTicket(newTicket.id);
+		}
 		setSupportStatus('✓ Тикет создан', 'success');
 	} catch (err) {
 		setSupportStatus('❌ ' + err.message, 'error');
