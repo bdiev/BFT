@@ -184,10 +184,15 @@ async function loadUsers() {
 // ===== ТИКЕТЫ ПОДДЕРЖКИ =====
 async function loadTickets() {
 	try {
-		tickets = await apiCall('/api/admin/support/tickets');
+		console.log('📥 Загружаю тикеты...');
+		const response = await apiCall('/api/admin/support/tickets');
+		console.log('📦 Ответ сервера:', response);
+		tickets = response;
+		console.log('✓ Тикеты установлены в переменную:', tickets.length, 'штук');
+		console.log('Содержимое tickets:', JSON.stringify(tickets, null, 2));
 		renderTickets();
 	} catch (err) {
-		console.error('Ошибка загрузки тикетов:', err);
+		console.error('❌ Ошибка загрузки тикетов:', err);
 		document.getElementById('ticketsList').innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
 	}
 }
@@ -207,9 +212,12 @@ function renderTickets() {
 	const listEl = document.getElementById('ticketsList');
 	const filter = document.getElementById('ticketStatusFilter')?.value || 'all';
 	const filtered = filter === 'all' ? tickets : tickets.filter(t => t.status === filter);
+	
+	console.log('🎨 Рендеринг тикетов. Фильтр:', filter, 'Всего:', tickets.length, 'Отфильтрировано:', filtered.length);
 
 	if (!filtered.length) {
 		listEl.innerHTML = '<div class="empty-state">Тикетов пока нет</div>';
+		console.warn('⚠️ Нет тикетов для отображения');
 		return;
 	}
 
@@ -221,6 +229,7 @@ function renderTickets() {
 			${t.last_message ? `<div class="meta">${escapeHtml(t.last_sender_role === 'admin' ? 'Админ: ' : 'Юзер: ')}${escapeHtml(t.last_message.slice(0, 80))}</div>` : ''}
 		</div>
 	`).join('');
+	console.log('✓ Отрендерено', filtered.length, 'тикетов');
 }
 
 function renderTicketMessages(messages = []) {

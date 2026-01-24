@@ -1228,11 +1228,15 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
       (SELECT message FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
       (SELECT sender_role FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_sender_role
     FROM support_tickets t
-    JOIN users u ON u.id = t.user_id
+    LEFT JOIN users u ON u.id = t.user_id
     ORDER BY t.updated_at DESC
   `;
   db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Ошибка загрузки тикетов' });
+    if (err) {
+      console.error('❌ Ошибка загрузки тикетов:', err);
+      return res.status(500).json({ error: 'Ошибка загрузки тикетов' });
+    }
+    console.log('✓ Загружено тикетов:', rows?.length || 0, rows);
     res.json(rows || []);
   });
 });
