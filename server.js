@@ -1222,11 +1222,18 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
 // ===== Поддержка для админов =====
 app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
   const query = `
-    SELECT t.id, t.user_id, u.username, t.subject, t.status, t.created_at, t.updated_at,
+    SELECT 
+      t.id, 
+      t.user_id, 
+      COALESCE(u.username, 'Удалённый пользователь') as username, 
+      t.subject, 
+      t.status, 
+      t.created_at, 
+      t.updated_at,
       t.closed_by_admin_id,
-      (SELECT username FROM users WHERE id = t.closed_by_admin_id) as closed_by_admin_name,
-      (SELECT message FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
-      (SELECT sender_role FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_sender_role
+      (SELECT username FROM users WHERE id = t.closed_by_admin_id LIMIT 1) as closed_by_admin_name,
+      (SELECT message FROM support_messages WHERE ticket_id = t.id ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT sender_role FROM support_messages WHERE ticket_id = t.id ORDER BY created_at DESC LIMIT 1) as last_sender_role
     FROM support_tickets t
     LEFT JOIN users u ON u.id = t.user_id
     ORDER BY t.updated_at DESC
