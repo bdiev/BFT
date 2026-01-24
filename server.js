@@ -1221,6 +1221,47 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
 
 // ===== Поддержка для админов =====
 app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
+  // Убеждаемся, что таблицы существуют перед запросом
+  const createTablesIfNeeded = () => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        closed_by_admin_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (closed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `, (err) => {
+      if (err && !err.message.includes('already exists')) {
+        console.error('❌ Ошибка создания support_tickets:', err);
+      }
+    });
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS support_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        sender_id INTEGER NOT NULL,
+        sender_role TEXT CHECK(sender_role IN ('user','admin')) NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `, (err) => {
+      if (err && !err.message.includes('already exists')) {
+        console.error('❌ Ошибка создания support_messages:', err);
+      }
+    });
+  };
+
+  createTablesIfNeeded();
+
+  // Простой и безопасный запрос
   const query = `
     SELECT 
       t.id, 
@@ -1230,35 +1271,82 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
       t.status, 
       t.created_at, 
       t.updated_at,
-      t.closed_by_admin_id,
-      (SELECT username FROM users WHERE id = t.closed_by_admin_id LIMIT 1) as closed_by_admin_name,
-      (SELECT message FROM support_messages WHERE ticket_id = t.id ORDER BY created_at DESC LIMIT 1) as last_message,
-      (SELECT sender_role FROM support_messages WHERE ticket_id = t.id ORDER BY created_at DESC LIMIT 1) as last_sender_role
+      t.closed_by_admin_id
     FROM support_tickets t
     LEFT JOIN users u ON u.id = t.user_id
     ORDER BY t.updated_at DESC
   `;
+
   db.all(query, [], (err, rows) => {
     if (err) {
-      console.error('❌ Ошибка загрузки тикетов:', err);
-      return res.status(500).json({ error: 'Ошибка загрузки тикетов' });
+      console.error('❌ Ошибка загрузки тикетов:', err.message);
+      return res.status(500).json({ error: 'Ошибка загрузки тикетов: ' + err.message });
     }
-    console.log('✓ Загружено тикетов:', rows?.length || 0, rows);
-    res.json(rows || []);
+
+    // Если тикеты есть, добавляем дополнительную информацию
+    if (rows && rows.length > 0) {
+      // Асинхронно добавляем информацию о последнем сообщении и админе-закрывателе
+      let completed = 0;
+      rows.forEach((ticket, index) => {
+        // Получаем последнее сообщение
+        db.get(
+          `SELECT message, sender_role FROM support_messages 
+           WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1`,
+          [ticket.id],
+          (err, msg) => {
+            if (!err && msg) {
+              ticket.last_message = msg.message;
+              ticket.last_sender_role = msg.sender_role;
+            }
+
+            // Получаем имя админа-закрывателя
+            if (ticket.closed_by_admin_id) {
+              db.get(
+                `SELECT username FROM users WHERE id = ?`,
+                [ticket.closed_by_admin_id],
+                (err, admin) => {
+                  if (!err && admin) {
+                    ticket.closed_by_admin_name = admin.username;
+                  }
+                  completed++;
+                  if (completed === rows.length) {
+                    console.log('✓ Загружено тикетов:', rows.length);
+                    res.json(rows);
+                  }
+                }
+              );
+            } else {
+              completed++;
+              if (completed === rows.length) {
+                console.log('✓ Загружено тикетов:', rows.length);
+                res.json(rows);
+              }
+            }
+          }
+        );
+      });
+    } else {
+      console.log('✓ Загружено тикетов: 0');
+      res.json([]);
+    }
   });
 });
 
 app.get('/api/admin/support/tickets/:id/messages', requireAdmin, (req, res) => {
   const ticketId = parseInt(req.params.id);
   db.all(
-    `SELECT m.id, m.sender_role, m.message, m.created_at, u.username as sender_name
+    `SELECT m.id, m.sender_role, m.message, m.created_at, 
+            COALESCE(u.username, 'Неизвестный пользователь') as sender_name
      FROM support_messages m
-     JOIN users u ON u.id = m.sender_id
+     LEFT JOIN users u ON u.id = m.sender_id
      WHERE m.ticket_id = ?
      ORDER BY m.created_at ASC`,
     [ticketId],
     (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Ошибка загрузки сообщений' });
+      if (err) {
+        console.error('❌ Ошибка загрузки сообщений:', err.message);
+        return res.status(500).json({ error: 'Ошибка загрузки сообщений' });
+      }
       res.json(rows || []);
     }
   );
