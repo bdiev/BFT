@@ -1302,7 +1302,7 @@ app.get('/api/admin/users/:id', requireAdmin, (req, res) => {
   const userId = req.params.id;
   
   db.get(
-    'SELECT id, username, email, gender, is_admin, created_at FROM users WHERE id = ?',
+    'SELECT id, username, email, gender, is_admin, created_at, avatar FROM users WHERE id = ?',
     [userId],
     (err, user) => {
       if (err) return res.status(500).json({ error: 'Ошибка БД' });
