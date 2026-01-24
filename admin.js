@@ -185,7 +185,8 @@ async function loadUsers() {
 async function loadTickets() {
 	try {
 		console.log('📥 Загружаю тикеты...');
-		const response = await apiCall('/api/admin/support/tickets');
+		const showArchived = document.getElementById('ticketArchiveFilter')?.value === 'archived';
+		const response = await apiCall(`/api/admin/support/tickets?archived=${showArchived}`);
 		console.log('📦 Ответ сервера:', response);
 		tickets = response;
 		console.log('✓ Тикеты установлены в переменную:', tickets.length, 'штук');
@@ -279,6 +280,34 @@ async function saveTicketStatus() {
 	});
 	tickets = tickets.map(t => t.id === currentTicketId ? { ...t, status } : t);
 	renderTickets();
+}
+
+async function archiveCurrentTicket() {
+	if (!currentTicketId) return;
+	const currentTicket = tickets.find(t => t.id === currentTicketId);
+	if (!currentTicket) return;
+
+	const isArchived = currentTicket.archived;
+	const newStatus = !isArchived;
+	const confirmMsg = newStatus ? 'Архивировать этот тикет?' : 'Разархивировать этот тикет?';
+	
+	if (!confirm(confirmMsg)) return;
+
+	try {
+		await apiCall(`/api/admin/support/tickets/${currentTicketId}/archive`, {
+			method: 'POST',
+			body: JSON.stringify({ archived: newStatus })
+		});
+		
+		// Обновляем локально
+		tickets = tickets.map(t => t.id === currentTicketId ? { ...t, archived: newStatus ? 1 : 0 } : t);
+		
+		// Перезагружаем список
+		await loadTickets();
+		console.log('✓ Тикет ' + (newStatus ? 'архивирован' : 'разархивирован'));
+	} catch (err) {
+		alert('Ошибка: ' + err.message);
+	}
 }
 
 async function sendTicketReply() {
@@ -674,7 +703,9 @@ async function init() {
 
 	// Тикеты
 	document.getElementById('ticketStatusFilter')?.addEventListener('change', renderTickets);
+	document.getElementById('ticketArchiveFilter')?.addEventListener('change', loadTickets);
 	document.getElementById('saveTicketStatusBtn')?.addEventListener('click', saveTicketStatus);
+	document.getElementById('archiveTicketBtn')?.addEventListener('click', archiveCurrentTicket);
 	document.getElementById('sendTicketReplyBtn')?.addEventListener('click', sendTicketReply);
 
 	document.getElementById('confirmResetPasswordBtn').addEventListener('click', resetPassword);

@@ -285,6 +285,7 @@ db.serialize(() => {
       subject TEXT NOT NULL,
       status TEXT DEFAULT 'open',
       closed_by_admin_id INTEGER,
+      archived INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -321,6 +322,7 @@ db.serialize(() => {
       
       if (columns && columns.length > 0) {
         const hasClosedByAdminId = columns.some(col => col.name === 'closed_by_admin_id');
+        const hasArchived = columns.some(col => col.name === 'archived');
         
         if (!hasClosedByAdminId) {
           console.log('Миграция: добавляем поле closed_by_admin_id в support_tickets...');
@@ -331,6 +333,20 @@ db.serialize(() => {
                 console.error('Ошибка миграции closed_by_admin_id:', err);
               } else if (!err) {
                 console.log('✓ Поле closed_by_admin_id добавлено');
+              }
+            }
+          );
+        }
+
+        if (!hasArchived) {
+          console.log('Миграция: добавляем поле archived в support_tickets...');
+          db.run(
+            "ALTER TABLE support_tickets ADD COLUMN archived INTEGER DEFAULT 0",
+            (err) => {
+              if (err && !err.message.includes('duplicate column')) {
+                console.error('Ошибка миграции archived:', err);
+              } else if (!err) {
+                console.log('✓ Поле archived добавлено');
               }
             }
           );
@@ -1249,6 +1265,8 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
 
 // ===== Поддержка для админов =====
 app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
+  const showArchived = req.query.archived === 'true' ? true : false;
+
   // Убеждаемся, что таблицы существуют перед запросом
   const createTablesIfNeeded = () => {
     db.run(`
@@ -1258,6 +1276,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
         subject TEXT NOT NULL,
         status TEXT DEFAULT 'open',
         closed_by_admin_id INTEGER,
+        archived INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -1286,16 +1305,16 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
       }
     });
 
-    // Миграция: добавляем closed_by_admin_id если его нет
+    // Миграция: добавляем archived если его нет
     db.all("PRAGMA table_info(support_tickets)", (err, columns) => {
       if (!err && columns) {
-        const hasClosedByAdminId = columns.some(col => col.name === 'closed_by_admin_id');
-        if (!hasClosedByAdminId) {
-          db.run("ALTER TABLE support_tickets ADD COLUMN closed_by_admin_id INTEGER", (err) => {
+        const hasArchived = columns.some(col => col.name === 'archived');
+        if (!hasArchived) {
+          db.run("ALTER TABLE support_tickets ADD COLUMN archived INTEGER DEFAULT 0", (err) => {
             if (err && !err.message.includes('duplicate column')) {
-              console.error('Ошибка добавления closed_by_admin_id:', err);
+              console.error('Ошибка добавления archived:', err);
             } else if (!err) {
-              console.log('✓ Миграция: добавлено closed_by_admin_id');
+              console.log('✓ Миграция: добавлено archived');
             }
           });
         }
@@ -1305,7 +1324,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
 
   createTablesIfNeeded();
 
-  // Простой и безопасный запрос
+  // Запрос с фильтром по архивированию
   const query = `
     SELECT 
       t.id, 
@@ -1315,13 +1334,15 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
       t.status, 
       t.created_at, 
       t.updated_at,
-      COALESCE(t.closed_by_admin_id, NULL) as closed_by_admin_id
+      COALESCE(t.closed_by_admin_id, NULL) as closed_by_admin_id,
+      COALESCE(t.archived, 0) as archived
     FROM support_tickets t
     LEFT JOIN users u ON u.id = t.user_id
+    WHERE t.archived = ?
     ORDER BY t.updated_at DESC
   `;
 
-  db.all(query, [], (err, rows) => {
+  db.all(query, [showArchived ? 1 : 0], (err, rows) => {
     if (err) {
       console.error('❌ Ошибка загрузки тикетов:', err.message);
       return res.status(500).json({ error: 'Ошибка загрузки тикетов: ' + err.message });
@@ -1329,7 +1350,6 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
 
     // Если тикеты есть, добавляем дополнительную информацию
     if (rows && rows.length > 0) {
-      // Асинхронно добавляем информацию о последнем сообщении и админе-закрывателе
       let completed = 0;
       rows.forEach((ticket) => {
         // Получаем последнее сообщение
@@ -1354,7 +1374,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
                   }
                   completed++;
                   if (completed === rows.length) {
-                    console.log('✓ Загружено тикетов:', rows.length);
+                    console.log('✓ Загружено тикетов:', rows.length, '(архивированы:', showArchived + ')');
                     res.json(rows);
                   }
                 }
@@ -1362,7 +1382,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
             } else {
               completed++;
               if (completed === rows.length) {
-                console.log('✓ Загружено тикетов:', rows.length);
+                console.log('✓ Загружено тикетов:', rows.length, '(архивированы:', showArchived + ')');
                 res.json(rows);
               }
             }
@@ -1370,7 +1390,7 @@ app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
         );
       });
     } else {
-      console.log('✓ Загружено тикетов: 0');
+      console.log('✓ Загружено тикетов: 0 (архивированы:', showArchived + ')');
       res.json([]);
     }
   });
@@ -1392,6 +1412,26 @@ app.get('/api/admin/support/tickets/:id/messages', requireAdmin, (req, res) => {
         return res.status(500).json({ error: 'Ошибка загрузки сообщений' });
       }
       res.json(rows || []);
+    }
+  );
+});
+
+app.post('/api/admin/support/tickets/:id/archive', requireAdmin, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { archived } = req.body || {};
+  
+  if (typeof archived !== 'boolean') {
+    return res.status(400).json({ error: 'Укажи archived (true/false)' });
+  }
+
+  db.run(
+    'UPDATE support_tickets SET archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [archived ? 1 : 0, ticketId],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Не удалось изменить статус архива' });
+      if (this.changes === 0) return res.status(404).json({ error: 'Тикет не найден' });
+      notifyAdmins('ticketUpdate', { ticketId, archived, userId: null });
+      res.json({ message: archived ? 'Тикет архивирован' : 'Тикет разархивирован' });
     }
   );
 });

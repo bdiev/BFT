@@ -135,6 +135,10 @@
 						<option value="resolved">Исправлен</option>
 						<option value="closed">Закрыт</option>
 					</select>
+					<select id="ticketArchiveFilter" class="search-input" style="max-width: 180px;">
+						<option value="active">Активные</option>
+						<option value="archived">Архив</option>
+					</select>
 				</div>
 			</div>
 
@@ -156,6 +160,7 @@
 								<option value="closed">Закрыт</option>
 							</select>
 							<button class="btn-primary" id="saveTicketStatusBtn">Сохранить</button>
+							<button class="btn-secondary" id="archiveTicketBtn" title="Архивировать тикет">📦 Архив</button>
 						</div>
 					</div>
 					<div class="ticket-messages" id="ticketMessages">
