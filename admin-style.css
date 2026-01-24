@@ -216,11 +216,13 @@ body.theme-glass-admin {
 .ticket-card .subject {
 	font-weight: 700;
 	margin-bottom: 6px;
+	overflow-wrap: anywhere;
 }
 
 .ticket-card .meta {
 	font-size: 12px;
 	color: #94a3b8;
+	overflow-wrap: anywhere;
 }
 
 .ticket-status-badge {
@@ -248,11 +250,13 @@ body.theme-glass-admin {
 .ticket-subject {
 	font-size: 18px;
 	font-weight: 700;
+	overflow-wrap: anywhere;
 }
 
 .ticket-meta {
 	color: #94a3b8;
 	font-size: 12px;
+	overflow-wrap: anywhere;
 }
 
 .ticket-messages {
@@ -271,6 +275,7 @@ body.theme-glass-admin {
 	border-radius: 10px;
 	background: rgba(255,255,255,0.03);
 	border: 1px solid rgba(255,255,255,0.06);
+	overflow-wrap: anywhere;
 }
 
 .ticket-message .by-admin { color: #c4b5fd; font-weight: 700; }
@@ -913,6 +918,7 @@ input[type="text"]:focus {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	overflow-wrap: anywhere;
 }
 
 .user-card-username {
@@ -959,6 +965,7 @@ input[type="text"]:focus {
 	align-items: center;
 	padding: 6px 0;
 	border-bottom: 1px solid var(--border);
+	gap: 10px;
 }
 
 .user-card-info-row:last-child {
@@ -1095,6 +1102,8 @@ input[type="text"]:focus {
 	.users-table th,
 	.users-table td {
 		padding: 10px;
+		word-break: break-word;
+		overflow-wrap: anywhere;
 	}
 
 	.action-buttons { flex-direction: column; }
