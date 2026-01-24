@@ -1100,6 +1100,56 @@ input[type="text"]:focus {
 	.typing-dot { width: 5px; height: 5px; }
 }
 
+/* Очень узкие экраны (телефоны) */
+@media (max-width: 480px) {
+	.admin-container { padding: 8px 8px 16px; }
+	.admin-header { padding: 10px 10px; }
+	.header-left h1 { font-size: 16px; }
+	.btn-back, .btn-logout { padding: 8px 10px; font-size: 12px; }
+	
+	.stats-section { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+	.stat-card { padding: 8px; gap: 4px; }
+	.stat-icon { font-size: 18px; }
+	.stat-label { font-size: 9px; }
+	.stat-value { font-size: 14px; }
+
+	.section-header h2 { font-size: 14px; }
+	.section-header .search-input { font-size: 11px; padding: 6px; }
+
+	.toggle-btn { padding: 6px 8px; font-size: 10px; }
+
+	.tickets-grid { gap: 8px; }
+	.tickets-list, .ticket-thread { padding: 8px; }
+
+	.ticket-card { padding: 8px; margin-bottom: 6px; }
+	.ticket-card .subject { font-size: 13px; margin-bottom: 4px; }
+	.ticket-card .meta { font-size: 10px; }
+
+	.ticket-thread__header { gap: 6px; margin-bottom: 6px; }
+	.ticket-subject { font-size: 14px; }
+
+	.ticket-status-controls { grid-template-columns: 1fr; gap: 4px; }
+	#ticketStatusSelect { padding: 6px 8px; font-size: 10px; }
+	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { padding: 6px 8px; font-size: 10px; }
+
+	.ticket-messages { height: 160px; padding: 6px; margin-bottom: 6px; }
+	.ticket-message { margin-bottom: 4px; padding: 6px; font-size: 10px; }
+	.ticket-message time { font-size: 8px; }
+
+	.ticket-reply textarea { min-height: 50px; padding: 6px; font-size: 11px; }
+	.ticket-reply button { padding: 6px 10px; font-size: 11px; }
+
+	.action-buttons { gap: 3px; }
+	.btn-action { padding: 5px 6px; font-size: 10px; }
+
+	.users-table { font-size: 10px; }
+	.users-table th, .users-table td { padding: 4px; }
+
+	.empty-state { padding: 8px; font-size: 10px; }
+	.typing-text { font-size: 10px; }
+	.typing-dot { width: 4px; height: 4px; }
+}
+
 /* Загрузка */
 .loading {
 	text-align: center;
