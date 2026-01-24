@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 // Позволяем вынести БД на volume, чтобы данные не терялись при перезапуске контейнера
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.db');
-const MAX_AVATAR_SIZE = 350 * 1024; // 350KB — достаточно для небольшого круглого аватара
+const MAX_AVATAR_SIZE = 1.5 * 1024 * 1024; // 1.5MB — для чётких аватаров без потери качества
 
 // Middleware
 app.use(express.json({ limit: '2mb' }));
@@ -548,7 +548,7 @@ app.post('/api/profile/avatar', authenticateToken, (req, res) => {
 
   const size = Buffer.byteLength(base64Part, 'base64');
   if (size > MAX_AVATAR_SIZE) {
-    return res.status(413).json({ error: 'Слишком большой файл. Максимум 350KB' });
+    return res.status(413).json({ error: 'Слишком большой файл. Максимум 1.5MB' });
   }
 
   db.run('UPDATE users SET avatar = ? WHERE id = ?', [imageData, req.userId], (err) => {

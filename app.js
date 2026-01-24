@@ -1031,7 +1031,7 @@ document.getElementById('entryDetailModal')?.addEventListener('click', (e) => {
 });
 
 // ===== ФУНКЦИИ ЛОГИКИ =====
-const AVATAR_MAX_BYTES = 350 * 1024;
+const AVATAR_MAX_BYTES = 1.5 * 1024 * 1024;
 
 function setAvatarStatus(message = '', tone = 'info') {
 	if (!avatarStatus) return;
@@ -2564,7 +2564,7 @@ function handleAvatarFileSelected(event) {
 	}
 
 	if (file.size > AVATAR_MAX_BYTES) {
-		setAvatarStatus('❌ Фото должно быть до 350KB', 'error');
+		setAvatarStatus('❌ Фото должно быть до 1.5MB', 'error');
 		return;
 	}
 
