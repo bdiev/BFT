@@ -307,8 +307,43 @@ body.theme-glass-admin {
 
 .tickets-filters {
 	display: flex;
-	gap: 10px;
+	gap: 16px;
 	align-items: center;
+	flex-wrap: wrap;
+}
+
+.toggle-group {
+	display: flex;
+	gap: 4px;
+	background: rgba(255,255,255,0.05);
+	padding: 4px;
+	border-radius: 10px;
+	border: 1px solid rgba(255,255,255,0.1);
+}
+
+.toggle-btn {
+	padding: 8px 16px;
+	border: none;
+	background: transparent;
+	color: var(--text-secondary);
+	font-size: 14px;
+	font-weight: 500;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+	font-family: 'Space Grotesk', sans-serif;
+}
+
+.toggle-btn:hover {
+	background: rgba(255,255,255,0.08);
+	color: var(--text-primary);
+}
+
+.toggle-btn.active {
+	background: var(--accent);
+	color: white;
+	box-shadow: 0 2px 8px rgba(124,58,237,0.3);
 }
 
 /* Статистика */

@@ -185,7 +185,8 @@ async function loadUsers() {
 async function loadTickets() {
 	try {
 		console.log('📥 Загружаю тикеты...');
-		const showArchived = document.getElementById('ticketArchiveFilter')?.value === 'archived';
+		const archiveBtn = document.querySelector('.toggle-btn.active[data-filter="archive"]');
+		const showArchived = archiveBtn?.dataset.value === 'archived';
 		const response = await apiCall(`/api/admin/support/tickets?archived=${showArchived}`);
 		console.log('📦 Ответ сервера:', response);
 		tickets = response;
@@ -211,7 +212,8 @@ async function loadTicketMessages(ticketId) {
 
 function renderTickets() {
 	const listEl = document.getElementById('ticketsList');
-	const filter = document.getElementById('ticketStatusFilter')?.value || 'all';
+	const statusBtn = document.querySelector('.toggle-btn.active[data-filter="status"]');
+	const filter = statusBtn?.dataset.value || 'all';
 	const filtered = filter === 'all' ? tickets : tickets.filter(t => t.status === filter);
 	
 	console.log('🎨 Рендеринг тикетов. Фильтр:', filter, 'Всего:', tickets.length, 'Отфильтрировано:', filtered.length);
@@ -701,9 +703,27 @@ async function init() {
 		document.getElementById('resetPasswordModal').style.display = 'none';
 	});
 
-	// Тикеты
-	document.getElementById('ticketStatusFilter')?.addEventListener('change', renderTickets);
-	document.getElementById('ticketArchiveFilter')?.addEventListener('change', loadTickets);
+	// Тикеты - обработчики переключателей
+	document.querySelectorAll('.toggle-btn[data-filter="status"]').forEach(btn => {
+		btn.addEventListener('click', () => {
+			// Убираем active со всех кнопок статуса
+			document.querySelectorAll('.toggle-btn[data-filter="status"]').forEach(b => b.classList.remove('active'));
+			// Добавляем active на кликнутую
+			btn.classList.add('active');
+			renderTickets();
+		});
+	});
+
+	document.querySelectorAll('.toggle-btn[data-filter="archive"]').forEach(btn => {
+		btn.addEventListener('click', () => {
+			// Убираем active со всех кнопок архива
+			document.querySelectorAll('.toggle-btn[data-filter="archive"]').forEach(b => b.classList.remove('active'));
+			// Добавляем active на кликнутую
+			btn.classList.add('active');
+			loadTickets();
+		});
+	});
+
 	document.getElementById('saveTicketStatusBtn')?.addEventListener('click', saveTicketStatus);
 	document.getElementById('archiveTicketBtn')?.addEventListener('click', archiveCurrentTicket);
 	document.getElementById('sendTicketReplyBtn')?.addEventListener('click', sendTicketReply);

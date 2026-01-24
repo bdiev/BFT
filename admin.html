@@ -128,17 +128,17 @@
 			<div class="section-header">
 				<h2>Чат поддержки</h2>
 				<div class="tickets-filters">
-					<select id="ticketStatusFilter" class="search-input" style="max-width: 220px;">
-						<option value="all">Все статусы</option>
-						<option value="open">Открыт</option>
-						<option value="in_progress">В работе</option>
-						<option value="resolved">Исправлен</option>
-						<option value="closed">Закрыт</option>
-					</select>
-					<select id="ticketArchiveFilter" class="search-input" style="max-width: 180px;">
-						<option value="active">Активные</option>
-						<option value="archived">Архив</option>
-					</select>
+					<div class="toggle-group">
+						<button class="toggle-btn active" data-value="active" data-filter="archive">Активные</button>
+						<button class="toggle-btn" data-value="archived" data-filter="archive">Архив</button>
+					</div>
+					<div class="toggle-group">
+						<button class="toggle-btn active" data-value="all" data-filter="status">Все</button>
+						<button class="toggle-btn" data-value="open" data-filter="status">Открыт</button>
+						<button class="toggle-btn" data-value="in_progress" data-filter="status">В работе</button>
+						<button class="toggle-btn" data-value="resolved" data-filter="status">Исправлен</button>
+						<button class="toggle-btn" data-value="closed" data-filter="status">Закрыт</button>
+					</div>
 				</div>
 			</div>
 
