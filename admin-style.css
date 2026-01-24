@@ -1035,6 +1035,10 @@ input[type="text"]:focus {
 /* Адаптивность */
 
 @media (max-width: 768px) {
+	.admin-container {
+		padding: 14px 12px 32px;
+	}
+
 	.admin-header {
 		padding: 16px 20px;
 	}
@@ -1081,7 +1085,7 @@ input[type="text"]:focus {
 	}
 
 	.stats-section {
-		grid-template-columns: 1fr;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	}
 
 	.users-table {
@@ -1093,18 +1097,65 @@ input[type="text"]:focus {
 		padding: 10px;
 	}
 
-	.action-buttons {
-		flex-direction: column;
-	}
+	.action-buttons { flex-direction: column; }
 	
 	/* На мобильных показываем карточки вместо таблицы */
 	#usersTableDesktop {
 		display: none;
 	}
 	
-	.users-grid {
-		display: grid;
+	.users-grid { display: grid; }
+
+	.section-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
 	}
+
+	.tickets-filters {
+		width: 100%;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 10px;
+	}
+
+	.toggle-group {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.toggle-btn {
+		flex: 1;
+		padding: 10px 12px;
+	}
+
+	.tickets-grid {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	.ticket-thread__header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+
+	.ticket-status-controls {
+		width: 100%;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	#ticketStatusSelect { width: 100%; }
+	#archiveTicketBtn,
+	#saveTicketStatusBtn,
+	#deleteTicketBtn { width: 100%; justify-content: center; }
+
+	.ticket-messages { height: 240px; }
+	.ticket-reply textarea { min-height: 70px; }
+
+	.tickets-list { max-height: none; }
 }
 
 /* Загрузка */
