@@ -39,6 +39,10 @@ let customTimers = {
 	3: 300
 };
 
+// Поддержка
+let userTickets = [];
+let currentSupportTicketId = null;
+
 const CACHE_KEYS = {
 	user: 'cache_user',
 	history: 'cache_history',
@@ -814,6 +818,15 @@ function connectWebSocket(userId) {
 					console.log('⚖️ Обновление веса в реал-тайме:', msg.updateType, msg.data);
 					loadWeightLogs();
 					loadWeightChartData(currentWeightPeriod || 'month');
+				} else if (msg.updateType === 'ticketReply') {
+					if (msg.data?.ticketId) {
+						console.log('💬 Ответ по тикету в реал-тайме');
+						// Обновляем список и переписку, если открыто
+						loadUserTickets();
+						if (currentSupportTicketId === msg.data.ticketId) {
+							loadSupportMessages(currentSupportTicketId);
+						}
+					}
 				} else if (msg.updateType === 'adminRightsGranted') {
 					// Пользователю выданы права администратора
 					console.log('🎉 Права администратора получены!');
@@ -943,6 +956,19 @@ const accountAvatarInput = document.getElementById('accountAvatarInput');
 const changeAvatarBtn = document.getElementById('changeAvatarBtn');
 const removeAvatarBtn = document.getElementById('removeAvatarBtn');
 const avatarStatus = document.getElementById('avatarStatus');
+const supportModal = document.getElementById('supportModal');
+const openSupportBtn = document.getElementById('openSupportBtn');
+const closeSupportModal = document.getElementById('closeSupportModal');
+const userTicketsList = document.getElementById('userTicketsList');
+const supportSubjectInput = document.getElementById('supportSubject');
+const supportMessageInput = document.getElementById('supportMessage');
+const supportStatus = document.getElementById('supportStatus');
+const supportMessagesBox = document.getElementById('supportMessages');
+const supportReplyInput = document.getElementById('supportReplyInput');
+const supportActiveSubject = document.getElementById('supportActiveSubject');
+const supportActiveMeta = document.getElementById('supportActiveMeta');
+const createTicketBtn = document.getElementById('createTicketBtn');
+const sendSupportReplyBtn = document.getElementById('sendSupportReplyBtn');
 
 const settingsModal = document.getElementById('settingsModal');
 const closeSettingsModal = document.getElementById('closeSettingsModal');
@@ -1089,6 +1115,147 @@ function applyAvatarUI(avatarData) {
 		}
 	} catch (err) {
 		console.error('❌ Ошибка обновления аватара в UI:', err);
+	}
+}
+
+// ===== Поддержка (пользователь) =====
+function setSupportStatus(text = '', tone = 'info') {
+	if (!supportStatus) return;
+	const palette = { info: '#a5b4fc', success: '#86efac', error: '#fca5a5' };
+	supportStatus.textContent = text;
+	supportStatus.style.color = palette[tone] || palette.info;
+}
+
+function statusLabel(status) {
+	switch (status) {
+		case 'open':
+			return 'Открыт';
+		case 'in_progress':
+			return 'В работе';
+		case 'resolved':
+			return 'Решён';
+		case 'closed':
+			return 'Закрыт';
+		default:
+			return status || '—';
+	}
+}
+
+async function loadUserTickets() {
+	if (!userTicketsList) return;
+	try {
+		userTickets = await apiCall('/api/support/tickets');
+		renderUserTickets();
+		if (!currentSupportTicketId && userTickets.length) {
+			selectSupportTicket(userTickets[0].id);
+		} else if (currentSupportTicketId) {
+			const t = userTickets.find(t => t.id === currentSupportTicketId);
+			if (t) {
+				supportActiveSubject && (supportActiveSubject.textContent = t.subject);
+				supportActiveMeta && (supportActiveMeta.textContent = statusLabel(t.status));
+			}
+		}
+	} catch (err) {
+		console.error('Ошибка загрузки тикетов:', err);
+		userTicketsList.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+	}
+}
+
+function renderUserTickets() {
+	if (!userTicketsList) return;
+	if (!userTickets.length) {
+		userTicketsList.innerHTML = '<div class="empty-state">Тикетов пока нет</div>';
+		return;
+	}
+	userTicketsList.innerHTML = userTickets.map(t => `
+		<div class="support-ticket-card ${t.id === currentSupportTicketId ? 'active' : ''}" data-id="${t.id}">
+			<div class="subject">${escapeHtml(t.subject)}</div>
+			<div class="meta">${formatLocalDateTime(new Date(t.updated_at))} • ${statusLabel(t.status)}</div>
+			${t.last_message ? `<div class="meta">${escapeHtml(t.last_message.slice(0,80))}</div>` : ''}
+		</div>
+	`).join('');
+	userTicketsList.querySelectorAll('.support-ticket-card').forEach(card => {
+		card.addEventListener('click', () => selectSupportTicket(parseInt(card.dataset.id)));
+	});
+}
+
+async function selectSupportTicket(id) {
+	currentSupportTicketId = id;
+	renderUserTickets();
+	const ticket = userTickets.find(t => t.id === id);
+	if (ticket) {
+		supportActiveSubject && (supportActiveSubject.textContent = ticket.subject);
+		supportActiveMeta && (supportActiveMeta.textContent = statusLabel(ticket.status));
+	}
+	await loadSupportMessages(id);
+}
+
+async function loadSupportMessages(ticketId) {
+	if (!ticketId || !supportMessagesBox) return;
+	try {
+		const messages = await apiCall(`/api/support/tickets/${ticketId}/messages`);
+		renderSupportMessages(messages);
+	} catch (err) {
+		console.error('Ошибка загрузки сообщений поддержки:', err);
+		supportMessagesBox.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+	}
+}
+
+function renderSupportMessages(messages = []) {
+	if (!supportMessagesBox) return;
+	if (!messages.length) {
+		supportMessagesBox.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+		return;
+	}
+	supportMessagesBox.innerHTML = messages.map(m => `
+		<div class="support-message">
+			<div class="role ${m.sender_role === 'admin' ? 'admin' : 'user'}">${m.sender_role === 'admin' ? 'Админ' : 'Вы'}</div>
+			<div>${escapeHtml(m.message)}</div>
+			<time>${formatLocalDateTime(new Date(m.created_at))}</time>
+		</div>
+	`).join('');
+	supportMessagesBox.scrollTop = supportMessagesBox.scrollHeight;
+}
+
+async function createSupportTicket() {
+	const subject = supportSubjectInput?.value.trim();
+	const message = supportMessageInput?.value.trim();
+	if (!subject || !message) {
+		setSupportStatus('❌ Заполни тему и сообщение', 'error');
+		return;
+	}
+	try {
+		setSupportStatus('⏳ Отправляю...', 'info');
+		await apiCall('/api/support/tickets', {
+			method: 'POST',
+			body: JSON.stringify({ subject, message })
+		});
+		supportSubjectInput.value = '';
+		supportMessageInput.value = '';
+		await loadUserTickets();
+		setSupportStatus('✓ Тикет создан', 'success');
+	} catch (err) {
+		setSupportStatus('❌ ' + err.message, 'error');
+	}
+}
+
+async function sendSupportReply() {
+	if (!currentSupportTicketId) {
+		setSupportStatus('Выбери тикет', 'error');
+		return;
+	}
+	const text = supportReplyInput?.value.trim();
+	if (!text) return;
+	try {
+		await apiCall(`/api/support/tickets/${currentSupportTicketId}/messages`, {
+			method: 'POST',
+			body: JSON.stringify({ message: text })
+		});
+		supportReplyInput.value = '';
+		await loadSupportMessages(currentSupportTicketId);
+		setSupportStatus('', 'info');
+	} catch (err) {
+		setSupportStatus('❌ ' + err.message, 'error');
 	}
 }
 
@@ -3557,6 +3724,35 @@ accountModal?.addEventListener('click', (e) => {
 		accountModal.classList.remove('active');
 		document.body.style.overflow = '';
 	}
+});
+
+// Модаль поддержки
+openSupportBtn?.addEventListener('click', () => {
+	supportModal?.classList.add('active');
+	document.body.style.overflow = 'hidden';
+	loadUserTickets();
+});
+
+closeSupportModal?.addEventListener('click', () => {
+	supportModal?.classList.remove('active');
+	document.body.style.overflow = '';
+});
+
+supportModal?.addEventListener('click', (e) => {
+	if (e.target === supportModal) {
+		supportModal.classList.remove('active');
+		document.body.style.overflow = '';
+	}
+});
+
+createTicketBtn?.addEventListener('click', (e) => {
+	e?.preventDefault?.();
+	createSupportTicket();
+});
+
+sendSupportReplyBtn?.addEventListener('click', (e) => {
+	e?.preventDefault?.();
+	sendSupportReply();
 });
 
 accountLogoutBtn?.addEventListener('click', async () => {

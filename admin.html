@@ -123,6 +123,52 @@
 			</div>
 		</section>
 
+		<!-- Поддержка -->
+		<section class="tickets-section">
+			<div class="section-header">
+				<h2>Чат поддержки</h2>
+				<div class="tickets-filters">
+					<select id="ticketStatusFilter" class="search-input" style="max-width: 220px;">
+						<option value="all">Все статусы</option>
+						<option value="open">Открыт</option>
+						<option value="in_progress">В работе</option>
+						<option value="resolved">Исправлен</option>
+						<option value="closed">Закрыт</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="tickets-grid">
+				<div class="tickets-list" id="ticketsList">
+					<div class="empty-state">Тикетов пока нет</div>
+				</div>
+				<div class="ticket-thread" id="ticketThread">
+					<div class="ticket-thread__header">
+						<div>
+							<div id="ticketSubject" class="ticket-subject">Выберите тикет</div>
+							<div id="ticketMeta" class="ticket-meta"></div>
+						</div>
+						<div class="ticket-status-controls">
+							<select id="ticketStatusSelect" class="search-input" style="max-width: 180px;">
+								<option value="open">Открыт</option>
+								<option value="in_progress">В работе</option>
+								<option value="resolved">Исправлен</option>
+								<option value="closed">Закрыт</option>
+							</select>
+							<button class="btn-primary" id="saveTicketStatusBtn">Сохранить</button>
+						</div>
+					</div>
+					<div class="ticket-messages" id="ticketMessages">
+						<div class="empty-state">Нет сообщений</div>
+					</div>
+					<div class="ticket-reply">
+						<textarea id="ticketReplyInput" placeholder="Ответить пользователю"></textarea>
+						<button class="btn-primary" id="sendTicketReplyBtn">Отправить</button>
+					</div>
+				</div>
+			</div>
+		</section>
+
 		<!-- Недавние пользователи -->
 		<section class="recent-users-section">
 			<h3>Недавние регистрации</h3>

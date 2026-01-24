@@ -459,6 +459,38 @@ app.post('/api/login', (req, res) => {
         return res.status(401).json({ error: 'Неверный пароль' });
       }
       
+
+  // Таблицы поддержки
+  db.run(`
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      status TEXT DEFAULT 'open',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы support_tickets:', err);
+    else console.log('✓ Таблица support_tickets готова');
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      sender_id INTEGER NOT NULL,
+      sender_role TEXT CHECK(sender_role IN ('user','admin')) NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+      FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы support_messages:', err);
+    else console.log('✓ Таблица support_messages готова');
+  });
       const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
       res.cookie('token', token, {
         httpOnly: true,
@@ -1033,6 +1065,93 @@ app.delete('/api/weight-logs/:id', authenticateToken, (req, res) => {
 });
 
 
+// ===== ПОДДЕРЖКА (тикеты) =====
+const TICKET_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
+
+// Создать тикет
+app.post('/api/support/tickets', authenticateToken, (req, res) => {
+  const { subject, message } = req.body || {};
+  if (!subject || !message) {
+    return res.status(400).json({ error: 'Укажи тему и сообщение' });
+  }
+  db.run(
+    'INSERT INTO support_tickets (user_id, subject, status) VALUES (?, ?, ?)',
+    [req.userId, subject.slice(0, 120), 'open'],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Не удалось создать тикет' });
+      const ticketId = this.lastID;
+      db.run(
+        'INSERT INTO support_messages (ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?)',
+        [ticketId, req.userId, 'user', message.slice(0, 2000)],
+        (msgErr) => {
+          if (msgErr) return res.status(500).json({ error: 'Тикет создан, но сообщение не сохранено' });
+          notifyAdmins('ticketUpdate', { ticketId, userId: req.userId, subject });
+          res.json({ ticketId, status: 'open', subject });
+        }
+      );
+    }
+  );
+});
+
+// Список тикетов пользователя
+app.get('/api/support/tickets', authenticateToken, (req, res) => {
+  const query = `
+    SELECT t.id, t.subject, t.status, t.created_at, t.updated_at,
+      (SELECT message FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
+      (SELECT sender_role FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_sender_role
+    FROM support_tickets t
+    WHERE t.user_id = ?
+    ORDER BY t.updated_at DESC
+  `;
+  db.all(query, [req.userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Ошибка загрузки тикетов' });
+    res.json(rows || []);
+  });
+});
+
+// Сообщения по тикету (пользователь может читать только свои)
+app.get('/api/support/tickets/:id/messages', authenticateToken, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  db.get('SELECT id FROM support_tickets WHERE id = ? AND user_id = ?', [ticketId, req.userId], (err, ticket) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    if (!ticket) return res.status(404).json({ error: 'Тикет не найден' });
+    db.all(
+      'SELECT id, sender_role, message, created_at FROM support_messages WHERE ticket_id = ? ORDER BY created_at ASC',
+      [ticketId],
+      (msgErr, rows) => {
+        if (msgErr) return res.status(500).json({ error: 'Ошибка загрузки сообщений' });
+        res.json(rows || []);
+      }
+    );
+  });
+});
+
+// Добавить сообщение в тикет (пользователь)
+app.post('/api/support/tickets/:id/messages', authenticateToken, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'Сообщение пустое' });
+
+  db.get('SELECT id FROM support_tickets WHERE id = ? AND user_id = ?', [ticketId, req.userId], (err, ticket) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    if (!ticket) return res.status(404).json({ error: 'Тикет не найден' });
+
+    db.serialize(() => {
+      db.run('UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [ticketId]);
+      db.run(
+        'INSERT INTO support_messages (ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?)',
+        [ticketId, req.userId, 'user', message.slice(0, 2000)],
+        function(msgErr) {
+          if (msgErr) return res.status(500).json({ error: 'Не удалось отправить' });
+          notifyAdmins('ticketUpdate', { ticketId, userId: req.userId, subject: null });
+          res.json({ message: 'Отправлено', id: this.lastID });
+        }
+      );
+    });
+  });
+});
+
+
 // ===== ЛОГИРОВАНИЕ ПОСЕЩЕНИЙ =====
 
 // Возвращаем фронт
@@ -1093,6 +1212,76 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
       return res.status(500).json({ error: 'Ошибка БД' });
     }
     res.json(rows || []);
+  });
+});
+
+// ===== Поддержка для админов =====
+app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
+  const query = `
+    SELECT t.id, t.user_id, u.username, t.subject, t.status, t.created_at, t.updated_at,
+      (SELECT message FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
+      (SELECT sender_role FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_sender_role
+    FROM support_tickets t
+    JOIN users u ON u.id = t.user_id
+    ORDER BY t.updated_at DESC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Ошибка загрузки тикетов' });
+    res.json(rows || []);
+  });
+});
+
+app.get('/api/admin/support/tickets/:id/messages', requireAdmin, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  db.all(
+    `SELECT m.id, m.sender_role, m.message, m.created_at, u.username as sender_name
+     FROM support_messages m
+     JOIN users u ON u.id = m.sender_id
+     WHERE m.ticket_id = ?
+     ORDER BY m.created_at ASC`,
+    [ticketId],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Ошибка загрузки сообщений' });
+      res.json(rows || []);
+    }
+  );
+});
+
+app.post('/api/admin/support/tickets/:id/status', requireAdmin, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { status } = req.body || {};
+  if (!TICKET_STATUSES.has(status)) {
+    return res.status(400).json({ error: 'Недопустимый статус' });
+  }
+  db.run('UPDATE support_tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, ticketId], function(err) {
+    if (err) return res.status(500).json({ error: 'Не удалось обновить статус' });
+    if (this.changes === 0) return res.status(404).json({ error: 'Тикет не найден' });
+    notifyAdmins('ticketUpdate', { ticketId, status, userId: null });
+    res.json({ message: 'Статус обновлен' });
+  });
+});
+
+app.post('/api/admin/support/tickets/:id/messages', requireAdmin, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'Сообщение пустое' });
+  db.serialize(() => {
+    db.run('UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [ticketId]);
+    db.run(
+      'INSERT INTO support_messages (ticket_id, sender_id, sender_role, message) VALUES (?, ?, ?, ?)',
+      [ticketId, req.userId, 'admin', message.slice(0, 2000)],
+      function(err) {
+        if (err) return res.status(500).json({ error: 'Не удалось отправить' });
+        // Найдем владельца тикета, чтобы уведомить его
+        db.get('SELECT user_id FROM support_tickets WHERE id = ?', [ticketId], (ownErr, row) => {
+          if (!ownErr && row) {
+            notifyUserUpdate(row.user_id, 'ticketReply', { ticketId, message });
+          }
+        });
+        notifyAdmins('ticketUpdate', { ticketId, userId: null });
+        res.json({ message: 'Отправлено', id: this.lastID });
+      }
+    );
   });
 });
 

@@ -173,6 +173,143 @@ body.theme-glass-admin {
 	opacity: 0.9;
 }
 
+/* Tickets */
+.tickets-section {
+	margin-top: 30px;
+}
+
+.tickets-grid {
+	display: grid;
+	grid-template-columns: 360px 1fr;
+	gap: 16px;
+}
+
+.tickets-list, .ticket-thread {
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 16px;
+	padding: 14px;
+	box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+}
+
+.ticket-card {
+	padding: 12px;
+	border-radius: 12px;
+	border: 1px solid rgba(255,255,255,0.08);
+	background: rgba(255,255,255,0.02);
+	margin-bottom: 10px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.ticket-card:hover {
+	border-color: rgba(99,102,241,0.4);
+	background: rgba(99,102,241,0.08);
+}
+
+.ticket-card.active {
+	border-color: rgba(99,102,241,0.6);
+	background: rgba(99,102,241,0.14);
+}
+
+.ticket-card .subject {
+	font-weight: 700;
+	margin-bottom: 6px;
+}
+
+.ticket-card .meta {
+	font-size: 12px;
+	color: #94a3b8;
+}
+
+.ticket-status-badge {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	border: 1px solid rgba(255,255,255,0.12);
+}
+
+.status-open { color: #a5b4fc; border-color: rgba(165,180,252,0.6); }
+.status-in_progress { color: #fde68a; border-color: rgba(253,230,138,0.6); }
+.status-resolved { color: #86efac; border-color: rgba(134,239,172,0.6); }
+.status-closed { color: #94a3b8; border-color: rgba(148,163,184,0.6); }
+
+.ticket-thread__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.ticket-subject {
+	font-size: 18px;
+	font-weight: 700;
+}
+
+.ticket-meta {
+	color: #94a3b8;
+	font-size: 12px;
+}
+
+.ticket-messages {
+	background: rgba(0,0,0,0.35);
+	border: 1px solid rgba(255,255,255,0.05);
+	border-radius: 12px;
+	padding: 12px;
+	height: 320px;
+	overflow-y: auto;
+	margin-bottom: 12px;
+}
+
+.ticket-message {
+	margin-bottom: 10px;
+	padding: 10px;
+	border-radius: 10px;
+	background: rgba(255,255,255,0.03);
+	border: 1px solid rgba(255,255,255,0.06);
+}
+
+.ticket-message .by-admin { color: #c4b5fd; font-weight: 700; }
+.ticket-message .by-user { color: #86efac; font-weight: 700; }
+
+.ticket-message time {
+	display: block;
+	color: #94a3b8;
+	font-size: 11px;
+	margin-top: 6px;
+}
+
+.ticket-reply textarea {
+	width: 100%;
+	min-height: 80px;
+	border-radius: 12px;
+	border: 1px solid rgba(255,255,255,0.12);
+	background: rgba(255,255,255,0.04);
+	color: #e2e8f0;
+	padding: 10px;
+	resize: vertical;
+	margin-bottom: 8px;
+}
+
+.ticket-reply button {
+	width: 160px;
+}
+
+.empty-state {
+	text-align: center;
+	color: #94a3b8;
+	padding: 20px;
+}
+
+.tickets-filters {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
 /* Статистика */
 .stats-section {
 	display: grid;

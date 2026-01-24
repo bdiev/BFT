@@ -144,6 +144,7 @@
 				
 				<div id="accountActions" style="text-align: center;">
 					<button class="ghost" id="adminPanelBtn" style="display: none; width: 100%; padding: 10px; border: none; margin-bottom: 12px; cursor: pointer; font-weight: 600; background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 10px; color: #c4b5fd; transition: all 0.2s;">⚙️ Админ-панель</button>
+					<button class="ghost" id="openSupportBtn" style="width: 100%; padding: 10px; border: none; margin-bottom: 12px; cursor: pointer; font-weight: 600; background: rgba(8, 145, 178, 0.12); border: 1px solid rgba(8, 145, 178, 0.25); border-radius: 10px; color: #7dd3fc; transition: all 0.2s;">💬 Поддержка</button>
 					<button class="ghost" id="toggleChangePassword" style="width: 100%; padding: 10px; border: none; margin-bottom: 12px; cursor: pointer; font-weight: 600; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; color: #a5b4fc; transition: all 0.2s;">Сменить пароль</button>
 					<button class="ghost" id="deleteAccountBtn" style="width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: 600; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; color: #fca5a5; transition: all 0.2s;">Удалить аккаунт</button>
 					<button class="primary" id="accountLogoutBtn" style="width: 100%; padding: 12px; border: none; margin-top: 12px; cursor: pointer; font-weight: 600; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5;">Выйти из аккаунта</button>
@@ -193,6 +194,43 @@
 						<ul id="cardOrderList" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;"></ul>
 					</div>
 					<p class="muted" id="cardVisibilityStatus" style="margin: 10px 0 0; font-size: 12px;"></p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Модаль поддержки -->
+	<div class="modal-overlay" id="supportModal">
+		<div class="modal-content" style="max-width: 760px;">
+			<div class="modal-header">
+				<h2>💬 Поддержка</h2>
+				<button class="modal-close" id="closeSupportModal" aria-label="Закрыть">✕</button>
+			</div>
+			<div class="modal-body">
+				<div class="support-layout">
+					<div class="support-left">
+						<h3 style="margin: 0 0 10px;">Мои тикеты</h3>
+						<div id="userTicketsList" class="support-tickets-list"></div>
+						<div class="support-new">
+							<input type="text" id="supportSubject" placeholder="Тема" />
+							<textarea id="supportMessage" placeholder="Опиши проблему" rows="3"></textarea>
+							<button class="primary" id="createTicketBtn" style="width:100%;">Создать тикет</button>
+							<p class="muted" id="supportStatus" style="margin: 6px 0 0; font-size: 12px;"></p>
+						</div>
+					</div>
+					<div class="support-right">
+						<div class="support-thread-header">
+							<div id="supportActiveSubject" class="support-active-subject">Выбери тикет</div>
+							<div id="supportActiveMeta" class="support-active-meta"></div>
+						</div>
+						<div id="supportMessages" class="support-messages">
+							<div class="empty-state">Нет сообщений</div>
+						</div>
+						<div class="support-reply">
+							<textarea id="supportReplyInput" placeholder="Написать сообщение" rows="3"></textarea>
+							<button class="primary" id="sendSupportReplyBtn">Отправить</button>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

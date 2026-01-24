@@ -45,6 +45,12 @@ function connectAdminWebSocket(userId) {
 						await loadStats();
 						// Обновляем только статистику, не всех пользователей
 						break;
+
+					case 'ticketUpdate':
+						console.log('🎫 Обновление тикетов');
+						await loadTickets();
+						if (currentTicketId) await loadTicketMessages(currentTicketId);
+						break;
 				}
 			}
 		} catch (e) {
@@ -107,6 +113,8 @@ async function checkAdminAccess() {
 let allUsers = [];
 let currentResetUserId = null;
 let currentSort = { field: null, direction: 'asc' };
+let tickets = [];
+let currentTicketId = null;
 
 async function loadStats() {
 	try {
@@ -171,6 +179,108 @@ async function loadUsers() {
 			</td></tr>
 		`;
 	}
+}
+
+// ===== ТИКЕТЫ ПОДДЕРЖКИ =====
+async function loadTickets() {
+	try {
+		tickets = await apiCall('/api/admin/support/tickets');
+		renderTickets();
+	} catch (err) {
+		console.error('Ошибка загрузки тикетов:', err);
+		document.getElementById('ticketsList').innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+	}
+}
+
+async function loadTicketMessages(ticketId) {
+	if (!ticketId) return;
+	try {
+		const messages = await apiCall(`/api/admin/support/tickets/${ticketId}/messages`);
+		renderTicketMessages(messages);
+	} catch (err) {
+		console.error('Ошибка загрузки сообщений тикета:', err);
+		document.getElementById('ticketMessages').innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+	}
+}
+
+function renderTickets() {
+	const listEl = document.getElementById('ticketsList');
+	const filter = document.getElementById('ticketStatusFilter')?.value || 'all';
+	const filtered = filter === 'all' ? tickets : tickets.filter(t => t.status === filter);
+
+	if (!filtered.length) {
+		listEl.innerHTML = '<div class="empty-state">Тикетов пока нет</div>';
+		return;
+	}
+
+	listEl.innerHTML = filtered.map(t => `
+		<div class="ticket-card ${t.id === currentTicketId ? 'active' : ''}" onclick="selectTicket(${t.id})">
+			<div class="subject">${escapeHtml(t.subject)}</div>
+			<div class="meta">${escapeHtml(t.username || '')} • ${formatDate(t.updated_at)} • <span class="ticket-status-badge status-${t.status}">${statusLabel(t.status)}</span></div>
+			${t.last_message ? `<div class="meta">${escapeHtml(t.last_sender_role === 'admin' ? 'Админ: ' : 'Юзер: ')}${escapeHtml(t.last_message.slice(0, 80))}</div>` : ''}
+		</div>
+	`).join('');
+}
+
+function renderTicketMessages(messages = []) {
+	const box = document.getElementById('ticketMessages');
+	if (!messages.length) {
+		box.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+		return;
+	}
+	box.innerHTML = messages.map(m => `
+		<div class="ticket-message">
+			<div class="${m.sender_role === 'admin' ? 'by-admin' : 'by-user'}">${m.sender_role === 'admin' ? 'Админ' : 'Пользователь'}${m.sender_name ? ': ' + escapeHtml(m.sender_name) : ''}</div>
+			<div>${escapeHtml(m.message)}</div>
+			<time>${formatDate(m.created_at)}</time>
+		</div>
+	`).join('');
+	box.scrollTop = box.scrollHeight;
+}
+
+function statusLabel(status) {
+	switch (status) {
+		case 'open': return 'Открыт';
+		case 'in_progress': return 'В работе';
+		case 'resolved': return 'Исправлен';
+		case 'closed': return 'Закрыт';
+		default: return status;
+	}
+}
+
+async function selectTicket(id) {
+	currentTicketId = id;
+	const ticket = tickets.find(t => t.id === id);
+	if (ticket) {
+		document.getElementById('ticketSubject').textContent = ticket.subject;
+		document.getElementById('ticketMeta').textContent = `${ticket.username || 'Пользователь'} • ${statusLabel(ticket.status)}`;
+		document.getElementById('ticketStatusSelect').value = ticket.status;
+	}
+	renderTickets();
+	await loadTicketMessages(id);
+}
+
+async function saveTicketStatus() {
+	if (!currentTicketId) return;
+	const status = document.getElementById('ticketStatusSelect').value;
+	await apiCall(`/api/admin/support/tickets/${currentTicketId}/status`, {
+		method: 'POST',
+		body: JSON.stringify({ status })
+	});
+	tickets = tickets.map(t => t.id === currentTicketId ? { ...t, status } : t);
+	renderTickets();
+}
+
+async function sendTicketReply() {
+	if (!currentTicketId) return;
+	const text = document.getElementById('ticketReplyInput').value.trim();
+	if (!text) return;
+	await apiCall(`/api/admin/support/tickets/${currentTicketId}/messages`, {
+		method: 'POST',
+		body: JSON.stringify({ message: text })
+	});
+	document.getElementById('ticketReplyInput').value = '';
+	await loadTicketMessages(currentTicketId);
 }
 
 async function loadUserDetails(userId) {
@@ -520,7 +630,8 @@ async function init() {
 	// Загружаем данные
 	await Promise.all([
 		loadStats(),
-		loadUsers()
+		loadUsers(),
+		loadTickets()
 	]);
 
 	// Настраиваем поиск
@@ -544,6 +655,11 @@ async function init() {
 	document.getElementById('closeResetPasswordModal').addEventListener('click', () => {
 		document.getElementById('resetPasswordModal').style.display = 'none';
 	});
+
+	// Тикеты
+	document.getElementById('ticketStatusFilter')?.addEventListener('change', renderTickets);
+	document.getElementById('saveTicketStatusBtn')?.addEventListener('click', saveTicketStatus);
+	document.getElementById('sendTicketReplyBtn')?.addEventListener('click', sendTicketReply);
 
 	document.getElementById('confirmResetPasswordBtn').addEventListener('click', resetPassword);
 
