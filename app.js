@@ -3803,14 +3803,8 @@ accountLogoutBtn?.addEventListener('click', async () => {
 		localStorage.removeItem('rememberMe_username');
 		localStorage.removeItem('rememberMe_password');
 		
-		// Обновляем интерфейс
-		updateUserBadge();
-		renderHistory();
-		
 		// Перезагружаем страницу для полного обновления
-		setTimeout(() => {
-			window.location.reload();
-		}, 300);
+		window.location.reload();
 	} catch (err) {
 		console.error('Ошибка выхода:', err.message);
 		alert('Ошибка выхода: ' + err.message);

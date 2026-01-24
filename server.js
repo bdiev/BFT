@@ -467,9 +467,11 @@ app.post('/api/login', (req, res) => {
       user_id INTEGER NOT NULL,
       subject TEXT NOT NULL,
       status TEXT DEFAULT 'open',
+      closed_by_admin_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (closed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL
     )
   `, (err) => {
     if (err) console.error('Ошибка создания таблицы support_tickets:', err);
@@ -1220,6 +1222,8 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
 app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
   const query = `
     SELECT t.id, t.user_id, u.username, t.subject, t.status, t.created_at, t.updated_at,
+      t.closed_by_admin_id,
+      (SELECT username FROM users WHERE id = t.closed_by_admin_id) as closed_by_admin_name,
       (SELECT message FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
       (SELECT sender_role FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) as last_sender_role
     FROM support_tickets t
@@ -1254,12 +1258,18 @@ app.post('/api/admin/support/tickets/:id/status', requireAdmin, (req, res) => {
   if (!TICKET_STATUSES.has(status)) {
     return res.status(400).json({ error: 'Недопустимый статус' });
   }
-  db.run('UPDATE support_tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, ticketId], function(err) {
-    if (err) return res.status(500).json({ error: 'Не удалось обновить статус' });
-    if (this.changes === 0) return res.status(404).json({ error: 'Тикет не найден' });
-    notifyAdmins('ticketUpdate', { ticketId, status, userId: null });
-    res.json({ message: 'Статус обновлен' });
-  });
+  // Если статус 'closed', сохраняем ID админа
+  const closedByAdminId = status === 'closed' ? req.userId : null;
+  db.run(
+    'UPDATE support_tickets SET status = ?, closed_by_admin_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [status, closedByAdminId, ticketId],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Не удалось обновить статус' });
+      if (this.changes === 0) return res.status(404).json({ error: 'Тикет не найден' });
+      notifyAdmins('ticketUpdate', { ticketId, status, userId: null });
+      res.json({ message: 'Статус обновлен' });
+    }
+  );
 });
 
 app.post('/api/admin/support/tickets/:id/messages', requireAdmin, (req, res) => {

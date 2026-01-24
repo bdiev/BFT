@@ -217,6 +217,7 @@ function renderTickets() {
 		<div class="ticket-card ${t.id === currentTicketId ? 'active' : ''}" onclick="selectTicket(${t.id})">
 			<div class="subject">${escapeHtml(t.subject)}</div>
 			<div class="meta">${escapeHtml(t.username || '')} • ${formatDate(t.updated_at)} • <span class="ticket-status-badge status-${t.status}">${statusLabel(t.status)}</span></div>
+			${t.status === 'closed' && t.closed_by_admin_name ? `<div class="meta">Закрыл: ${escapeHtml(t.closed_by_admin_name)}</div>` : ''}
 			${t.last_message ? `<div class="meta">${escapeHtml(t.last_sender_role === 'admin' ? 'Админ: ' : 'Юзер: ')}${escapeHtml(t.last_message.slice(0, 80))}</div>` : ''}
 		</div>
 	`).join('');
@@ -505,7 +506,13 @@ async function resetPassword() {
 // ===== МОДАЛЬНЫЕ ОКНА =====
 function showUserDetailsModal(user) {
 	const content = document.getElementById('userDetailsContent');
+	const avatarHtml = user.avatar 
+		? `<img src="${escapeHtml(user.avatar)}" alt="Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 16px; border: 2px solid var(--accent);">` 
+		: `<div style="width: 80px; height: 80px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px; border: 2px solid var(--border);">${user.username.charAt(0).toUpperCase()}</div>`;
 	content.innerHTML = `
+		<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
+			${avatarHtml}
+		</div>
 		<div class="detail-row">
 			<span class="detail-label">ID:</span>
 			<span class="detail-value">${user.id}</span>
