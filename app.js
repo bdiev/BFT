@@ -1193,6 +1193,16 @@ async function selectSupportTicket(id) {
 	if (ticket) {
 		supportActiveSubject && (supportActiveSubject.textContent = ticket.subject);
 		supportActiveMeta && (supportActiveMeta.textContent = statusLabel(ticket.status));
+		// Блокируем ответы, если тикет закрыт
+		const isClosed = ticket.status === 'closed';
+		if (supportReplyInput) {
+			supportReplyInput.disabled = isClosed;
+			supportReplyInput.placeholder = isClosed ? 'Тикет закрыт' : 'Ваше сообщение...';
+		}
+		if (sendSupportReplyBtn) {
+			sendSupportReplyBtn.disabled = isClosed;
+			sendSupportReplyBtn.style.opacity = isClosed ? '0.5' : '1';
+		}
 	}
 	await loadSupportMessages(id);
 }
@@ -1252,6 +1262,11 @@ async function createSupportTicket() {
 async function sendSupportReply() {
 	if (!currentSupportTicketId) {
 		setSupportStatus('Выбери тикет', 'error');
+		return;
+	}
+	const ticket = userTickets.find(t => t.id === currentSupportTicketId);
+	if (ticket?.status === 'closed') {
+		setSupportStatus('❌ Тикет закрыт, ответы запрещены', 'error');
 		return;
 	}
 	const text = supportReplyInput?.value.trim();

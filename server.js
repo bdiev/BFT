@@ -1132,9 +1132,10 @@ app.post('/api/support/tickets/:id/messages', authenticateToken, (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Сообщение пустое' });
 
-  db.get('SELECT id FROM support_tickets WHERE id = ? AND user_id = ?', [ticketId, req.userId], (err, ticket) => {
+  db.get('SELECT id, status FROM support_tickets WHERE id = ? AND user_id = ?', [ticketId, req.userId], (err, ticket) => {
     if (err) return res.status(500).json({ error: 'Ошибка БД' });
     if (!ticket) return res.status(404).json({ error: 'Тикет не найден' });
+    if (ticket.status === 'closed') return res.status(403).json({ error: 'Тикет закрыт, ответы запрещены' });
 
     db.serialize(() => {
       db.run('UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [ticketId]);
