@@ -338,6 +338,23 @@ body.theme-glass-admin {
 	width: 160px;
 }
 
+.btn-danger {
+	background: #ef4444;
+	color: #fff;
+	border: 1px solid rgba(248,113,113,0.6);
+	transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.2s ease;
+}
+
+.btn-danger:hover {
+	box-shadow: 0 6px 16px rgba(239,68,68,0.35);
+	transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
 .empty-state {
 	text-align: center;
 	color: #94a3b8;

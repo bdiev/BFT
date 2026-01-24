@@ -1436,6 +1436,24 @@ app.post('/api/admin/support/tickets/:id/archive', requireAdmin, (req, res) => {
   );
 });
 
+// Удаление архивированного тикета и его диалога
+app.delete('/api/admin/support/tickets/:id', requireAdmin, (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  if (!ticketId) return res.status(400).json({ error: 'Некорректный ID' });
+
+  db.get('SELECT archived FROM support_tickets WHERE id = ?', [ticketId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Ошибка БД' });
+    if (!row) return res.status(404).json({ error: 'Тикет не найден' });
+    if (!row.archived) return res.status(400).json({ error: 'Сначала архивируй тикет' });
+
+    db.run('DELETE FROM support_tickets WHERE id = ?', [ticketId], function(delErr) {
+      if (delErr) return res.status(500).json({ error: 'Не удалось удалить тикет' });
+      notifyAdmins('ticketUpdate', { ticketId, deleted: true, userId: null });
+      res.json({ message: 'Тикет удалён' });
+    });
+  });
+});
+
 app.post('/api/admin/support/tickets/:id/status', requireAdmin, (req, res) => {
   const ticketId = parseInt(req.params.id);
   const { status } = req.body || {};

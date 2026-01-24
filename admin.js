@@ -200,6 +200,13 @@ async function loadTickets() {
 		console.log('✓ Тикеты установлены в переменную:', tickets.length, 'штук');
 		console.log('Содержимое tickets:', JSON.stringify(tickets, null, 2));
 		renderTickets();
+		if (currentTicketId && !tickets.find(t => t.id === currentTicketId)) {
+			currentTicketId = null;
+			document.getElementById('ticketSubject').textContent = 'Выберите тикет';
+			document.getElementById('ticketMeta').textContent = '';
+			document.getElementById('ticketMessages').innerHTML = '<div class="empty-state">Тикет удалён или скрыт</div>';
+			document.getElementById('deleteTicketBtn').style.display = 'none';
+		}
 	} catch (err) {
 		console.error('❌ Ошибка загрузки тикетов:', err);
 		document.getElementById('ticketsList').innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
@@ -299,6 +306,7 @@ async function selectTicket(id) {
 		document.getElementById('ticketSubject').textContent = ticket.subject;
 		document.getElementById('ticketMeta').textContent = `${ticket.username || 'Пользователь'} • ${statusLabel(ticket.status)}`;
 		document.getElementById('ticketStatusSelect').value = ticket.status;
+		document.getElementById('deleteTicketBtn').style.display = ticket.archived ? 'inline-flex' : 'none';
 	}
 	renderTickets();
 	hideTicketTypingIndicator();
@@ -341,6 +349,29 @@ async function archiveCurrentTicket() {
 		console.log('✓ Тикет ' + (newStatus ? 'архивирован' : 'разархивирован'));
 	} catch (err) {
 		alert('Ошибка: ' + err.message);
+	}
+}
+
+async function deleteCurrentTicket() {
+	if (!currentTicketId) return;
+	const currentTicket = tickets.find(t => t.id === currentTicketId);
+	if (!currentTicket) return;
+	if (!currentTicket.archived) {
+		alert('Сначала архивируйте тикет перед удалением.');
+		return;
+	}
+	if (!confirm('Удалить диалог безвозвратно?')) return;
+	try {
+		await apiCall(`/api/admin/support/tickets/${currentTicketId}`, { method: 'DELETE' });
+		tickets = tickets.filter(t => t.id !== currentTicketId);
+		currentTicketId = null;
+		document.getElementById('ticketSubject').textContent = 'Выберите тикет';
+		document.getElementById('ticketMeta').textContent = '';
+		document.getElementById('ticketMessages').innerHTML = '<div class="empty-state">Диалог удалён</div>';
+		document.getElementById('deleteTicketBtn').style.display = 'none';
+		renderTickets();
+	} catch (err) {
+		alert('Ошибка удаления: ' + err.message);
 	}
 }
 
@@ -775,6 +806,7 @@ async function init() {
 	document.getElementById('archiveTicketBtn')?.addEventListener('click', archiveCurrentTicket);
 	document.getElementById('sendTicketReplyBtn')?.addEventListener('click', sendTicketReply);
 	document.getElementById('ticketReplyInput')?.addEventListener('input', emitAdminTyping);
+	document.getElementById('deleteTicketBtn')?.addEventListener('click', deleteCurrentTicket);
 
 	document.getElementById('confirmResetPasswordBtn').addEventListener('click', resetPassword);
 
