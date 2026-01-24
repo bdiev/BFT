@@ -1042,129 +1042,62 @@ input[type="text"]:focus {
 /* Адаптивность */
 
 @media (max-width: 768px) {
-	.admin-container {
-		padding: 14px 12px 32px;
-	}
-
-	.admin-header {
-		padding: 16px 20px;
-	}
-
-	.header-content {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 12px;
-	}
-
-	.header-left {
-		width: 100%;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 10px;
-	}
+	.admin-container { padding: 10px 10px 20px; }
+	.admin-header { padding: 12px 14px; margin-bottom: 16px; }
+	.header-content { flex-direction: column; align-items: stretch; gap: 8px; }
+	.header-left { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+	.header-left h1 { font-size: 18px; flex: 1 1 100%; margin: 0; }
+	.admin-badge { order: 2; font-size: 11px; padding: 4px 8px; }
+	.current-user { order: 1; flex: 1; text-align: left; font-size: 13px; }
+	.header-right { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+	.btn-back, .btn-logout { width: 100%; min-width: unset; padding: 10px 12px; font-size: 13px; }
 	
-	.header-left h1 {
-		font-size: 22px;
-		flex: 1 1 100%;
-	}
+	.stats-section { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 16px; }
+	.stat-card { padding: 10px; gap: 6px; }
+	.stat-icon { font-size: 22px; }
+	.stat-label { font-size: 10px; }
+	.stat-value { font-size: 16px; }
+
+	.users-table { font-size: 11px; }
+	.users-table th, .users-table td { padding: 6px; word-break: break-word; overflow-wrap: anywhere; }
+	.action-buttons { flex-direction: column; gap: 4px; }
+	.btn-action { padding: 6px 8px; font-size: 11px; }
 	
-	.admin-badge {
-		order: 2;
-	}
-	
-	.current-user {
-		order: 1;
-		flex: 1;
-		text-align: left;
-	}
+	#usersTableDesktop { display: none; }
+	.users-grid { display: grid; gap: 10px; }
 
-	.header-right {
-		width: 100%;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-	
-	.btn-back,
-	.btn-logout {
-		width: 100%;
-		min-width: unset;
-	}
+	.section-header { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 12px; }
+	.section-header h2 { font-size: 15px; margin: 0; }
+	.section-header .search-input { width: 100%; font-size: 12px; padding: 8px; }
 
-	.stats-section {
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	}
+	.tickets-filters { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
+	.toggle-group { width: 100%; justify-content: flex-start; overflow-x: auto; padding: 0; }
+	.toggle-btn { flex-shrink: 0; padding: 8px 10px; font-size: 11px; white-space: nowrap; }
 
-	.users-table {
-		font-size: 13px;
-	}
+	.tickets-grid { grid-template-columns: 1fr; gap: 10px; }
+	.tickets-list, .ticket-thread { padding: 10px; }
+	.ticket-card { padding: 10px; margin-bottom: 8px; }
 
-	.users-table th,
-	.users-table td {
-		padding: 10px;
-		word-break: break-word;
-		overflow-wrap: anywhere;
-	}
+	.ticket-thread__header { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 8px; }
+	.ticket-subject { font-size: 15px; }
+	.ticket-meta { font-size: 11px; }
 
-	.action-buttons { flex-direction: column; }
-	
-	/* На мобильных показываем карточки вместо таблицы */
-	#usersTableDesktop {
-		display: none;
-	}
-	
-	.users-grid { display: grid; }
+	.ticket-status-controls { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+	#ticketStatusSelect { width: 100%; padding: 8px 10px; font-size: 11px; }
+	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { width: 100%; padding: 8px 10px; font-size: 11px; justify-content: center; }
 
-	.section-header {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 10px;
-	}
+	.ticket-messages { height: 180px; padding: 8px; margin-bottom: 8px; }
+	.ticket-message { margin-bottom: 6px; padding: 8px; font-size: 11px; }
+	.ticket-message .by-admin, .ticket-message .by-user { font-size: 10px; }
+	.ticket-message time { font-size: 9px; }
 
-	.tickets-filters {
-		width: 100%;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 10px;
-	}
-
-	.toggle-group {
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.toggle-btn {
-		flex: 1;
-		padding: 10px 12px;
-	}
-
-	.tickets-grid {
-		grid-template-columns: 1fr;
-		gap: 12px;
-	}
-
-	.ticket-thread__header {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 10px;
-	}
-
-	.ticket-status-controls {
-		width: 100%;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-
-	#ticketStatusSelect { width: 100%; }
-	#archiveTicketBtn,
-	#saveTicketStatusBtn,
-	#deleteTicketBtn { width: 100%; justify-content: center; }
-
-	.ticket-messages { height: 240px; }
-	.ticket-reply textarea { min-height: 70px; }
+	.ticket-reply textarea { min-height: 55px; padding: 8px; font-size: 12px; }
+	.ticket-reply button { padding: 8px 12px; font-size: 12px; width: 100%; }
 
 	.tickets-list { max-height: none; }
+	.empty-state { padding: 12px; font-size: 11px; }
+	.typing-indicator { font-size: 11px; gap: 4px; }
+	.typing-dot { width: 5px; height: 5px; }
 }
 
 /* Загрузка */
