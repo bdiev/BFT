@@ -937,6 +937,12 @@ const accountModal = document.getElementById('accountModal');
 const closeAccountModal = document.getElementById('closeAccountModal');
 const userAccountBtn = document.getElementById('userAccountBtn');
 const accountLogoutBtn = document.getElementById('accountLogoutBtn');
+const accountAvatarImg = document.getElementById('accountAvatarImg');
+const accountAvatarFallback = document.getElementById('accountAvatarFallback');
+const accountAvatarInput = document.getElementById('accountAvatarInput');
+const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+const removeAvatarBtn = document.getElementById('removeAvatarBtn');
+const avatarStatus = document.getElementById('avatarStatus');
 
 const settingsModal = document.getElementById('settingsModal');
 const closeSettingsModal = document.getElementById('closeSettingsModal');
@@ -1025,6 +1031,67 @@ document.getElementById('entryDetailModal')?.addEventListener('click', (e) => {
 });
 
 // ===== ФУНКЦИИ ЛОГИКИ =====
+const AVATAR_MAX_BYTES = 350 * 1024;
+
+function setAvatarStatus(message = '', tone = 'info') {
+	if (!avatarStatus) return;
+	const palette = {
+		info: '#a5b4fc',
+		success: '#86efac',
+		error: '#fca5a5'
+	};
+	avatarStatus.textContent = message;
+	avatarStatus.style.color = palette[tone] || palette.info;
+}
+
+function applyAvatarUI(avatarData) {
+	try {
+		const hasAvatar = typeof avatarData === 'string' && avatarData.startsWith('data:image/');
+		const fallbackSymbol = (currentUser?.charAt(0) || '👤').toUpperCase();
+
+		if (accountAvatarImg && accountAvatarFallback) {
+			if (hasAvatar) {
+				accountAvatarImg.src = avatarData;
+				accountAvatarImg.style.display = 'block';
+				accountAvatarFallback.style.display = 'none';
+			} else {
+				accountAvatarImg.removeAttribute('src');
+				accountAvatarImg.style.display = 'none';
+				accountAvatarFallback.style.display = 'flex';
+				accountAvatarFallback.textContent = fallbackSymbol;
+			}
+		}
+
+		if (removeAvatarBtn) {
+			removeAvatarBtn.style.display = hasAvatar ? '' : 'none';
+		}
+
+		if (avatarStatus && avatarStatus.dataset.locked !== 'true' && !avatarStatus.textContent) {
+			avatarStatus.style.color = '#a5b4fc';
+		}
+
+		if (userAccountBtn) {
+			if (hasAvatar) {
+				userAccountBtn.innerHTML = '';
+				const chip = document.createElement('span');
+				chip.className = 'user-account-chip';
+				const img = document.createElement('span');
+				img.className = 'user-account-chip__img';
+				img.style.backgroundImage = `url('${avatarData}')`;
+				const name = document.createElement('span');
+				name.textContent = currentUser || 'Аккаунт';
+				chip.appendChild(img);
+				chip.appendChild(name);
+				userAccountBtn.appendChild(chip);
+			} else {
+				userAccountBtn.textContent = '👤 ' + (currentUser || 'Аккаунт');
+			}
+		}
+	} catch (err) {
+		console.error('❌ Ошибка обновления аватара в UI:', err);
+	}
+}
+
 function updateUserBadge() {
 	try {
 		const loginForm = document.getElementById('loginForm');
@@ -1057,6 +1124,9 @@ function updateUserBadge() {
 			accountDisplayName.textContent = currentUser;
 		}
 		
+		// Подставляем аватар или первую букву имени
+		applyAvatarUI(currentUserData?.avatar || null);
+		
 		// Устанавливаем текущий пол в селекторе
 		const accountGenderSelect = document.getElementById('accountGender');
 	if (accountGenderSelect) {
@@ -1085,6 +1155,7 @@ function updateUserBadge() {
 			signupForm.style.display = 'none';
 			loginBtn.style.display = '';
 			toggleSignupBtn.style.display = '';
+			applyAvatarUI(null);
 		}
 	} catch (err) {
 		console.error('❌ Ошибка в updateUserBadge:', err);
@@ -2467,6 +2538,52 @@ function showNotification(message) {
 	}, 2000);
 }
 
+async function saveAvatar(imageData) {
+	try {
+		setAvatarStatus('⏳ Загружаю фото...', 'info');
+		const response = await apiCall('/api/profile/avatar', {
+			method: 'POST',
+			body: JSON.stringify({ imageData })
+		});
+		currentUserData = { ...(currentUserData || {}), avatar: response.avatar || null };
+		applyAvatarUI(response.avatar || null);
+		setAvatarStatus(response.message || '✓ Фото обновлено', 'success');
+	} catch (err) {
+		console.error('📸 Ошибка загрузки фото:', err);
+		setAvatarStatus('❌ ' + err.message, 'error');
+	}
+}
+
+function handleAvatarFileSelected(event) {
+	const file = event.target.files?.[0];
+	if (!file) return;
+
+	if (!file.type.startsWith('image/')) {
+		setAvatarStatus('❌ Загрузите изображение', 'error');
+		return;
+	}
+
+	if (file.size > AVATAR_MAX_BYTES) {
+		setAvatarStatus('❌ Фото должно быть до 350KB', 'error');
+		return;
+	}
+
+	const reader = new FileReader();
+	reader.onload = async () => {
+		if (typeof reader.result === 'string') {
+			applyAvatarUI(reader.result); // показываем превью сразу
+			await saveAvatar(reader.result);
+		}
+	};
+	reader.onerror = () => setAvatarStatus('❌ Не удалось прочитать файл', 'error');
+	reader.readAsDataURL(file);
+	event.target.value = '';
+}
+
+async function handleAvatarRemove() {
+	await saveAvatar(null);
+}
+
 // Toggle change-password form visibility inside the account modal
 function toggleChangePasswordForm() {
 	const changeForm = document.getElementById('changePasswordForm');
@@ -3132,6 +3249,9 @@ document.getElementById('signupPassword')?.addEventListener('input', (e) => {
 document.getElementById('toggleChangePassword')?.addEventListener('click', toggleChangePasswordForm);
 document.getElementById('saveNewPassword')?.addEventListener('click', handleChangePassword);
 document.getElementById('cancelChangePassword')?.addEventListener('click', toggleChangePasswordForm);
+changeAvatarBtn?.addEventListener('click', () => accountAvatarInput?.click());
+accountAvatarInput?.addEventListener('change', handleAvatarFileSelected);
+removeAvatarBtn?.addEventListener('click', handleAvatarRemove);
 document.getElementById('accountGender')?.addEventListener('change', handleGenderChange);
 document.getElementById('deleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
 document.getElementById('adminPanelBtn')?.addEventListener('click', () => {

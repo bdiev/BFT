@@ -92,7 +92,18 @@
 			</div>
 			<div class="modal-body">
 				<div id="accountInfo" style="text-align: center; margin-bottom: 20px;">
-					<p style="font-size: 32px; margin: 0 0 12px;">👤</p>
+					<div class="account-avatar-wrapper">
+						<div class="account-avatar" id="accountAvatar">
+							<img id="accountAvatarImg" alt="Фото профиля" />
+							<span class="account-avatar__fallback" id="accountAvatarFallback">👤</span>
+						</div>
+						<div class="account-avatar__controls">
+							<button class="ghost account-avatar__upload" id="changeAvatarBtn">Загрузить фото</button>
+							<button class="ghost account-avatar__reset" id="removeAvatarBtn" style="display: none;">Сбросить</button>
+						</div>
+						<input type="file" id="accountAvatarInput" accept="image/*" style="display: none;" />
+						<p class="muted" id="avatarStatus" style="margin: 6px 0 0; font-size: 12px;"></p>
+					</div>
 					<p style="font-size: 24px; font-weight: 700; margin: 8px 0 16px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="accountDisplayName">User</p>
 					<p class="muted" style="margin: 0; font-size: 13px;">Твои данные сохраняются безопасно на сервере</p>
 				</div>

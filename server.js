@@ -14,9 +14,10 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 // Позволяем вынести БД на volume, чтобы данные не терялись при перезапуске контейнера
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.db');
+const MAX_AVATAR_SIZE = 350 * 1024; // 350KB — достаточно для небольшого круглого аватара
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname)));
 app.use(cookieParser());
 
@@ -114,9 +115,10 @@ db.serialize(() => {
         
         const hasIsAdmin = columns.some(col => col.name === 'is_admin');
         const hasGender = columns.some(col => col.name === 'gender');
+        const hasAvatar = columns.some(col => col.name === 'avatar');
         
         let migrationsCompleted = 0;
-        let migrationsNeeded = (hasIsAdmin ? 0 : 1) + (hasGender ? 0 : 1);
+        let migrationsNeeded = (hasIsAdmin ? 0 : 1) + (hasGender ? 0 : 1) + (hasAvatar ? 0 : 1);
         
         const checkAndFinalizeMigration = () => {
           migrationsCompleted++;
@@ -149,6 +151,15 @@ db.serialize(() => {
           db.run("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'male'", (err) => {
             if (err) console.error('Ошибка миграции gender:', err);
             else console.log('✓ Поле gender добавлено');
+            checkAndFinalizeMigration();
+          });
+        }
+
+        if (!hasAvatar) {
+          console.log('Миграция: добавляем поле avatar...');
+          db.run("ALTER TABLE users ADD COLUMN avatar TEXT", (err) => {
+            if (err) console.error('Ошибка миграции avatar:', err);
+            else console.log('✓ Поле avatar добавлено');
             checkAndFinalizeMigration();
           });
         }
@@ -387,8 +398,8 @@ app.post('/api/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     db.run(
-      'INSERT INTO users (username, email, password_hash, gender) VALUES (?, ?, ?, ?)',
-      [username, email || null, hashedPassword, userGender],
+      'INSERT INTO users (username, email, password_hash, gender, avatar) VALUES (?, ?, ?, ?, ?)',
+      [username, email || null, hashedPassword, userGender, null],
       function(err) {
         if (err) {
           console.error('DB Error:', err.message);
@@ -409,7 +420,7 @@ app.post('/api/signup', async (req, res) => {
         
         res.json({
           message: 'Аккаунт создан!',
-          user: { id: this.lastID, username, isAdmin: false, gender: userGender }
+          user: { id: this.lastID, username, isAdmin: false, gender: userGender, avatar: null }
         });
         
         // Уведомляем админов о новой регистрации
@@ -436,7 +447,7 @@ app.post('/api/login', (req, res) => {
   }
   
   db.get(
-    'SELECT id, username, password_hash, is_admin, gender FROM users WHERE username = ?',
+    'SELECT id, username, password_hash, is_admin, gender, avatar FROM users WHERE username = ?',
     [username],
     async (err, user) => {
       if (err || !user) {
@@ -459,7 +470,7 @@ app.post('/api/login', (req, res) => {
       
       res.json({
         message: 'Вошли успешно!',
-        user: { id: user.id, username: user.username, isAdmin: !!user.is_admin, gender: user.gender }
+        user: { id: user.id, username: user.username, isAdmin: !!user.is_admin, gender: user.gender, avatar: user.avatar || null }
       });
     }
   );
@@ -501,14 +512,48 @@ app.post('/api/delete-account', authenticateToken, (req, res) => {
 
 // Получить текущего пользователя
 app.get('/api/me', authenticateToken, (req, res) => {
-  db.get('SELECT is_admin, gender FROM users WHERE id = ?', [req.userId], (err, row) => {
+  db.get('SELECT is_admin, gender, avatar FROM users WHERE id = ?', [req.userId], (err, row) => {
     if (err) return res.status(500).json({ error: 'Ошибка БД' });
     res.json({ 
       id: req.userId, 
       username: req.username, 
       isAdmin: row ? !!row.is_admin : false, 
-      gender: row ? (row.gender || 'male') : 'male'
+      gender: row ? (row.gender || 'male') : 'male',
+      avatar: row ? row.avatar || null : null
     });
+  });
+});
+
+// Сохранить / удалить аватар пользователя
+app.post('/api/profile/avatar', authenticateToken, (req, res) => {
+  const imageData = typeof req.body.imageData === 'string' ? req.body.imageData.trim() : null;
+
+  // Удаление аватара
+  if (!imageData) {
+    db.run('UPDATE users SET avatar = NULL WHERE id = ?', [req.userId], (err) => {
+      if (err) return res.status(500).json({ error: 'Не удалось удалить фото' });
+      return res.json({ message: 'Фото удалено', avatar: null });
+    });
+    return;
+  }
+
+  if (!imageData.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'Неверный формат файла' });
+  }
+
+  const base64Part = imageData.split(',')[1];
+  if (!base64Part) {
+    return res.status(400).json({ error: 'Пустой файл' });
+  }
+
+  const size = Buffer.byteLength(base64Part, 'base64');
+  if (size > MAX_AVATAR_SIZE) {
+    return res.status(413).json({ error: 'Слишком большой файл. Максимум 350KB' });
+  }
+
+  db.run('UPDATE users SET avatar = ? WHERE id = ?', [imageData, req.userId], (err) => {
+    if (err) return res.status(500).json({ error: 'Не удалось сохранить фото' });
+    res.json({ message: 'Фото обновлено', avatar: imageData });
   });
 });
 
