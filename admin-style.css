@@ -176,6 +176,7 @@ body.theme-glass-admin {
 /* Tickets */
 .tickets-section {
 	margin-top: 30px;
+	margin-bottom: 40px;
 }
 
 .tickets-grid {
@@ -398,6 +399,19 @@ body.theme-glass-admin {
 .search-input:focus {
 	outline: none;
 	border-color: var(--accent);
+}
+
+/* Стили для выпадающих списков (select) */
+select.search-input {
+	background: var(--bg-tertiary);
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+select.search-input option {
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	padding: 8px;
 }
 
 /* Таблица */
