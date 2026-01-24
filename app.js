@@ -961,6 +961,7 @@ const accountModal = document.getElementById('accountModal');
 const closeAccountModal = document.getElementById('closeAccountModal');
 const userAccountBtn = document.getElementById('userAccountBtn');
 const accountLogoutBtn = document.getElementById('accountLogoutBtn');
+const accountAvatar = document.getElementById('accountAvatar');
 const accountAvatarImg = document.getElementById('accountAvatarImg');
 const accountAvatarFallback = document.getElementById('accountAvatarFallback');
 const accountAvatarInput = document.getElementById('accountAvatarInput');
@@ -3482,6 +3483,7 @@ document.getElementById('signupPassword')?.addEventListener('input', (e) => {
 document.getElementById('toggleChangePassword')?.addEventListener('click', toggleChangePasswordForm);
 document.getElementById('saveNewPassword')?.addEventListener('click', handleChangePassword);
 document.getElementById('cancelChangePassword')?.addEventListener('click', toggleChangePasswordForm);
+accountAvatar?.addEventListener('click', () => accountAvatarInput?.click());
 changeAvatarBtn?.addEventListener('click', () => accountAvatarInput?.click());
 accountAvatarInput?.addEventListener('change', handleAvatarFileSelected);
 removeAvatarBtn?.addEventListener('click', handleAvatarRemove);
