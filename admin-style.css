@@ -1071,8 +1071,8 @@ input[type="text"]:focus {
 	.section-header .search-input { width: 100%; font-size: 12px; padding: 8px; }
 
 	.tickets-filters { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
-	.toggle-group { width: 100%; justify-content: flex-start; overflow-x: auto; padding: 0; }
-	.toggle-btn { flex-shrink: 0; padding: 8px 10px; font-size: 11px; white-space: nowrap; }
+	.toggle-group { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; justify-content: flex-start; overflow-x: visible; padding: 0; }
+	.toggle-btn { flex-shrink: 0; padding: 8px 10px; font-size: 11px; white-space: nowrap; width: 100%; text-align: center; }
 
 	.tickets-grid { grid-template-columns: 1fr; gap: 10px; }
 	.tickets-list, .ticket-thread { padding: 10px; }
@@ -1084,7 +1084,7 @@ input[type="text"]:focus {
 
 	.ticket-status-controls { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 	#ticketStatusSelect { width: 100%; padding: 8px 10px; font-size: 11px; }
-	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { width: 100%; padding: 8px 10px; font-size: 11px; justify-content: center; }
+	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { width: 100%; padding: 12px 10px; font-size: 11px; justify-content: center; min-height: 44px; }
 
 	.ticket-messages { height: 180px; padding: 8px; margin-bottom: 8px; }
 	.ticket-message { margin-bottom: 6px; padding: 8px; font-size: 11px; }
@@ -1092,7 +1092,7 @@ input[type="text"]:focus {
 	.ticket-message time { font-size: 9px; }
 
 	.ticket-reply textarea { min-height: 55px; padding: 8px; font-size: 12px; }
-	.ticket-reply button { padding: 8px 12px; font-size: 12px; width: 100%; }
+	.ticket-reply button { padding: 12px 12px; font-size: 12px; width: 100%; min-height: 44px; }
 
 	.tickets-list { max-height: none; }
 	.empty-state { padding: 12px; font-size: 11px; }
@@ -1116,7 +1116,7 @@ input[type="text"]:focus {
 	.section-header h2 { font-size: 14px; }
 	.section-header .search-input { font-size: 11px; padding: 6px; }
 
-	.toggle-btn { padding: 6px 8px; font-size: 10px; }
+	.toggle-btn { padding: 6px 8px; font-size: 10px; width: auto; display: flex; align-items: center; justify-content: center; }
 
 	.tickets-grid { gap: 8px; }
 	.tickets-list, .ticket-thread { padding: 8px; }
@@ -1130,14 +1130,14 @@ input[type="text"]:focus {
 
 	.ticket-status-controls { grid-template-columns: 1fr; gap: 4px; }
 	#ticketStatusSelect { padding: 6px 8px; font-size: 10px; }
-	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { padding: 6px 8px; font-size: 10px; }
+	#saveTicketStatusBtn, #archiveTicketBtn, #deleteTicketBtn { padding: 10px 8px; font-size: 10px; min-height: 40px; }
 
 	.ticket-messages { height: 160px; padding: 6px; margin-bottom: 6px; }
 	.ticket-message { margin-bottom: 4px; padding: 6px; font-size: 10px; }
 	.ticket-message time { font-size: 8px; }
 
 	.ticket-reply textarea { min-height: 50px; padding: 6px; font-size: 11px; }
-	.ticket-reply button { padding: 6px 10px; font-size: 11px; }
+	.ticket-reply button { padding: 10px 10px; font-size: 11px; min-height: 40px; }
 
 	.action-buttons { gap: 3px; }
 	.btn-action { padding: 5px 6px; font-size: 10px; }
