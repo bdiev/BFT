@@ -1198,6 +1198,7 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
       u.gender,
       u.is_admin,
       u.created_at,
+      u.avatar,
       COUNT(DISTINCT e.id) as entries_count,
       COUNT(DISTINCT w.id) as water_logs_count,
       COUNT(DISTINCT wl.id) as weight_logs_count
