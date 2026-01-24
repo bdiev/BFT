@@ -42,6 +42,8 @@ let customTimers = {
 // Поддержка
 let userTickets = [];
 let currentSupportTicketId = null;
+let supportTypingHideTimer = null;
+let lastSupportTypingSentAt = 0;
 
 const CACHE_KEYS = {
 	user: 'cache_user',
@@ -834,6 +836,8 @@ function connectWebSocket(userId) {
 							loadSupportMessages(currentSupportTicketId);
 						}
 					}
+				} else if (msg.updateType === 'ticketTyping') {
+					handleSupportTyping(msg.data);
 				} else if (msg.updateType === 'adminRightsGranted') {
 					// Пользователю выданы права администратора
 					console.log('🎉 Права администратора получены!');
@@ -972,6 +976,8 @@ const supportMessageInput = document.getElementById('supportMessage');
 const supportStatus = document.getElementById('supportStatus');
 const supportMessagesBox = document.getElementById('supportMessages');
 const supportReplyInput = document.getElementById('supportReplyInput');
+const supportTypingIndicator = document.getElementById('supportTypingIndicator');
+const supportTypingText = document.getElementById('supportTypingText');
 const supportActiveSubject = document.getElementById('supportActiveSubject');
 const supportActiveMeta = document.getElementById('supportActiveMeta');
 const createTicketBtn = document.getElementById('createTicketBtn');
@@ -1204,6 +1210,7 @@ async function selectSupportTicket(id) {
 			sendSupportReplyBtn.style.opacity = isClosed ? '0.5' : '1';
 		}
 	}
+	hideSupportTypingIndicator();
 	await loadSupportMessages(id);
 }
 
@@ -1222,6 +1229,7 @@ function renderSupportMessages(messages = []) {
 	if (!supportMessagesBox) return;
 	if (!messages.length) {
 		supportMessagesBox.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+		hideSupportTypingIndicator();
 		return;
 	}
 	supportMessagesBox.innerHTML = messages.map(m => `
@@ -1232,6 +1240,25 @@ function renderSupportMessages(messages = []) {
 		</div>
 	`).join('');
 	supportMessagesBox.scrollTop = supportMessagesBox.scrollHeight;
+	hideSupportTypingIndicator();
+}
+
+function hideSupportTypingIndicator() {
+	if (supportTypingIndicator) {
+		supportTypingIndicator.classList.remove('visible');
+	}
+}
+
+function handleSupportTyping(payload = {}) {
+	if (!supportTypingIndicator || !payload.ticketId) return;
+	if (payload.ticketId !== currentSupportTicketId) return;
+	const name = payload.name || 'Админ';
+	if (supportTypingText) {
+		supportTypingText.textContent = `${name} печатает...`;
+	}
+	supportTypingIndicator.classList.add('visible');
+	clearTimeout(supportTypingHideTimer);
+	supportTypingHideTimer = setTimeout(() => supportTypingIndicator.classList.remove('visible'), 2800);
 }
 
 async function createSupportTicket() {
@@ -1282,6 +1309,20 @@ async function sendSupportReply() {
 	} catch (err) {
 		setSupportStatus('❌ ' + err.message, 'error');
 	}
+}
+
+function emitUserTyping() {
+	if (!currentSupportTicketId) return;
+	if (!ws || ws.readyState !== WebSocket.OPEN) return;
+	const now = Date.now();
+	if (now - lastSupportTypingSentAt < 1200) return;
+	lastSupportTypingSentAt = now;
+	ws.send(JSON.stringify({
+		type: 'typing',
+		role: 'user',
+		ticketId: currentSupportTicketId,
+		name: currentUser || 'Пользователь'
+	}));
 }
 
 function updateUserBadge() {
@@ -3779,6 +3820,8 @@ sendSupportReplyBtn?.addEventListener('click', (e) => {
 	e?.preventDefault?.();
 	sendSupportReply();
 });
+
+supportReplyInput?.addEventListener('input', emitUserTyping);
 
 accountLogoutBtn?.addEventListener('click', async () => {
 	if (!confirm('Точно выйти?')) return;

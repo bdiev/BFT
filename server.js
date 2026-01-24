@@ -1897,6 +1897,27 @@ wss.on('connection', (ws) => {
         }
         
         ws.send(JSON.stringify({ type: 'auth', status: 'ok' }));
+      } else if (msg.type === 'typing' && msg.ticketId) {
+        const senderName = msg.name || (isAdmin ? 'Админ' : 'Пользователь');
+        // Пользователь набирает сообщение -> показываем всем админам
+        if (!isAdmin) {
+          notifyAdmins('ticketTyping', {
+            ticketId: msg.ticketId,
+            name: senderName,
+            from: 'user',
+            userId
+          });
+        } else {
+          // Админ набирает -> показываем владельцу тикета
+          db.get('SELECT user_id FROM support_tickets WHERE id = ?', [msg.ticketId], (err, row) => {
+            if (err || !row) return;
+            notifyUserUpdate(row.user_id, 'ticketTyping', {
+              ticketId: msg.ticketId,
+              name: senderName,
+              from: 'admin'
+            });
+          });
+        }
       }
     } catch (e) {
       console.error('WebSocket сообщение:', e.message);

@@ -46,6 +46,10 @@ function connectAdminWebSocket(userId) {
 						// Обновляем только статистику, не всех пользователей
 						break;
 
+					case 'ticketTyping':
+						handleTicketTyping(msg.data);
+						break;
+
 					case 'ticketUpdate':
 						console.log('🎫 Обновление тикетов');
 						await loadTickets();
@@ -115,6 +119,9 @@ let currentResetUserId = null;
 let currentSort = { field: null, direction: 'asc' };
 let tickets = [];
 let currentTicketId = null;
+let ticketTypingHideTimer = null;
+let lastAdminTypingSentAt = 0;
+let currentAdminName = '';
 
 async function loadStats() {
 	try {
@@ -239,6 +246,7 @@ function renderTicketMessages(messages = []) {
 	const box = document.getElementById('ticketMessages');
 	if (!messages.length) {
 		box.innerHTML = '<div class="empty-state">Нет сообщений</div>';
+		hideTicketTypingIndicator();
 		return;
 	}
 	box.innerHTML = messages.map(m => `
@@ -249,6 +257,29 @@ function renderTicketMessages(messages = []) {
 		</div>
 	`).join('');
 	box.scrollTop = box.scrollHeight;
+	hideTicketTypingIndicator();
+}
+
+function hideTicketTypingIndicator() {
+	const indicator = document.getElementById('ticketTypingIndicator');
+	if (indicator) {
+		indicator.classList.remove('visible');
+	}
+}
+
+function handleTicketTyping(payload = {}) {
+	if (!payload.ticketId) return;
+	if (payload.ticketId !== currentTicketId) return;
+	const indicator = document.getElementById('ticketTypingIndicator');
+	const textEl = document.getElementById('ticketTypingText');
+	if (!indicator) return;
+	const name = payload.name || 'Пользователь';
+	if (textEl) {
+		textEl.textContent = `${name} печатает...`;
+	}
+	indicator.classList.add('visible');
+	clearTimeout(ticketTypingHideTimer);
+	ticketTypingHideTimer = setTimeout(() => indicator.classList.remove('visible'), 2500);
 }
 
 function statusLabel(status) {
@@ -270,6 +301,7 @@ async function selectTicket(id) {
 		document.getElementById('ticketStatusSelect').value = ticket.status;
 	}
 	renderTickets();
+	hideTicketTypingIndicator();
 	await loadTicketMessages(id);
 }
 
@@ -322,6 +354,20 @@ async function sendTicketReply() {
 	});
 	document.getElementById('ticketReplyInput').value = '';
 	await loadTicketMessages(currentTicketId);
+}
+
+function emitAdminTyping() {
+	if (!currentTicketId) return;
+	if (!ws || ws.readyState !== WebSocket.OPEN) return;
+	const now = Date.now();
+	if (now - lastAdminTypingSentAt < 1200) return;
+	lastAdminTypingSentAt = now;
+	ws.send(JSON.stringify({
+		type: 'typing',
+		role: 'admin',
+		ticketId: currentTicketId,
+		name: currentAdminName || 'Админ'
+	}));
 }
 
 async function loadUserDetails(userId) {
@@ -667,6 +713,7 @@ async function init() {
 		const me = await apiCall('/api/me');
 		document.getElementById('currentAdminName').textContent = me.username;
 		currentUserId = me.id;
+		currentAdminName = me.username;
 		
 		// Подключаемся к WebSocket для реал-тайм обновлений
 		connectAdminWebSocket(currentUserId);
@@ -727,6 +774,7 @@ async function init() {
 	document.getElementById('saveTicketStatusBtn')?.addEventListener('click', saveTicketStatus);
 	document.getElementById('archiveTicketBtn')?.addEventListener('click', archiveCurrentTicket);
 	document.getElementById('sendTicketReplyBtn')?.addEventListener('click', sendTicketReply);
+	document.getElementById('ticketReplyInput')?.addEventListener('input', emitAdminTyping);
 
 	document.getElementById('confirmResetPasswordBtn').addEventListener('click', resetPassword);
 
