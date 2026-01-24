@@ -277,6 +277,40 @@ db.serialize(() => {
     else console.log('✓ Таблица visits готова');
   });
 
+  // Таблицы поддержки
+  db.run(`
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      status TEXT DEFAULT 'open',
+      closed_by_admin_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (closed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы support_tickets:', err);
+    else console.log('✓ Таблица support_tickets готова');
+  });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      sender_id INTEGER NOT NULL,
+      sender_role TEXT CHECK(sender_role IN ('user','admin')) NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+      FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error('Ошибка создания таблицы support_messages:', err);
+    else console.log('✓ Таблица support_messages готова');
+  });
+
   // Проверяем, существует ли таблица visits и её структура
   setTimeout(() => {
     db.all("PRAGMA table_info(visits)", (err, columns) => {
@@ -459,40 +493,6 @@ app.post('/api/login', (req, res) => {
         return res.status(401).json({ error: 'Неверный пароль' });
       }
       
-
-  // Таблицы поддержки
-  db.run(`
-    CREATE TABLE IF NOT EXISTS support_tickets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      subject TEXT NOT NULL,
-      status TEXT DEFAULT 'open',
-      closed_by_admin_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (closed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL
-    )
-  `, (err) => {
-    if (err) console.error('Ошибка создания таблицы support_tickets:', err);
-    else console.log('✓ Таблица support_tickets готова');
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS support_messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ticket_id INTEGER NOT NULL,
-      sender_id INTEGER NOT NULL,
-      sender_role TEXT CHECK(sender_role IN ('user','admin')) NOT NULL,
-      message TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
-      FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (err) console.error('Ошибка создания таблицы support_messages:', err);
-    else console.log('✓ Таблица support_messages готова');
-  });
       const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
       res.cookie('token', token, {
         httpOnly: true,
