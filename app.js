@@ -2638,7 +2638,7 @@ function renderWeightLogs() {
 		div.innerHTML = `
 			<div style="font-weight: 600; font-size: 16px; color: #e0e7ff;">${log.weight} кг</div>
 			<div style="font-size: 12px; color: #a5b4fc;">${dateStr}</div>
-			<button style="background: none; border: none; color: #ff8787; cursor: pointer; font-size: 14px;">×</button>
+			<button style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;"><img src="./web-icons/close-square.svg" alt="" style="width: 16px; height: 16px; filter: invert(28%) sepia(89%) saturate(2478%) hue-rotate(354deg) brightness(101%) contrast(94%);"></button>
 		`;
 		const deleteBtn = div.querySelector('button');
 		deleteBtn.addEventListener('click', () => deleteWeightLog(log.id));
