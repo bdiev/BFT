@@ -4080,7 +4080,7 @@ function initRestTimer() {
 			// Пауза
 			clearInterval(restTimerInterval);
 			restTimerRunning = false;
-			startBtn.innerHTML = '<img src="./web-icons/play-circle.svg" alt="" style="width: 18px; height: 18px; margin-right: 6px; filter: invert(1);" />Продолжить';
+			startBtn.innerHTML = '<img src="./web-icons/play-circle.svg" alt="" style="width: 16px; height: 16px; display: inline-block; margin-right: 6px; filter: invert(1);" />Продолжить';
 			startBtn.style.display = 'flex';
 			startBtn.style.alignItems = 'center';
 			startBtn.style.justifyContent = 'center';
@@ -4089,7 +4089,7 @@ function initRestTimer() {
 		} else {
 			// Старт
 			restTimerRunning = true;
-			startBtn.innerHTML = '<img src="./web-icons/pause-circle.svg" alt="" style="width: 18px; height: 18px; margin-right: 6px; filter: invert(1);" />Пауза';
+			startBtn.innerHTML = '<img src="./web-icons/pause-circle.svg" alt="" style="width: 16px; height: 16px; display: inline-block; margin-right: 6px; filter: invert(1);" />Пауза';
 			startBtn.style.display = 'flex';
 			startBtn.style.alignItems = 'center';
 			startBtn.style.justifyContent = 'center';
