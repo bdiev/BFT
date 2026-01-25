@@ -4080,12 +4080,12 @@ function initRestTimer() {
 			// Пауза
 			clearInterval(restTimerInterval);
 			restTimerRunning = false;
-			startBtn.textContent = '▶️ Продолжить';
+			startBtn.innerHTML = '<img src="./web-icons/play-circle.svg" alt="" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; filter: invert(1);" /> Продолжить';
 			timerStatus.textContent = 'Пауза';
 		} else {
 			// Старт
 			restTimerRunning = true;
-			startBtn.textContent = '⏸️ Пауза';
+			startBtn.innerHTML = '<img src="./web-icons/pause-circle.svg" alt="" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; filter: invert(1);" /> Пауза';
 			stopBtn.disabled = false;
 			timerStatus.textContent = 'Идёт отдых...';
 
