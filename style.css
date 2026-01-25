@@ -149,6 +149,7 @@ body.page-ready .site-footer {
 	gap: 20px;
 	flex: 1;
 	padding-bottom: 36px;
+	width: 100%;
 }
 
 header {
